@@ -3,7 +3,7 @@
 Lineo is a free image editing and drawing app that runs in your web browser. It is made for
 turning photos of paintings into clean outlines, and for editing and drawing on top of them.
 
-Live demo: https://lineo-editor.netlify.app
+Live demo: https://lineo-editor.netlify.app (backup: https://kimmo-luo.github.io/Lineo/)
 
 > **Status:** Lineo is still in development. Things may change and some rough edges remain.
 
