@@ -1,0 +1,14 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Environment files
+.env
+.env.*
+
+# OS junk
+.DS_Store
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini

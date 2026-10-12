@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Lineo – ääriviivat ja kuvankäsittely maalausten kuvista. Toimii selaimessa, kuvat pysyvät omalla koneella.">
+  <meta name="theme-color" content="#17191d">
+  <meta name="color-scheme" content="dark">
+  <title>Lineo</title>
+
+  <!-- PWA: asennus omaksi sovellukseksi (Chrome, Edge, Android) -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="shared/lineo-logo.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+
+  <!-- iPhone / iPad: lisäys kotinäytölle -->
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lineo">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+
+  <link rel="stylesheet" href="shared/lineo-theme.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="lineo-app" data-lineo-app="photo">
+
+  <header class="lineo-topbar app-topbar">
+    <div class="lineo-brand" title="Lineo">
+      <svg class="lineo-logo" viewBox="0 0 64 64" aria-hidden="true">
+        <rect class="lineo-logo-bg" x="2" y="2" width="60" height="60" rx="14"/>
+        <rect class="lineo-logo-ring" x="3" y="3" width="58" height="58" rx="13" fill="none" stroke-width="2"/>
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="6">
+          <path class="lineo-logo-mark" d="M19 13v31a6 6 0 0 0 6 6h11c6 0 8-9 14-9"/>
+        </g>
+        <circle class="lineo-logo-node" cx="50" cy="41" r="4.5"/>
+      </svg>
+      <div class="lineo-wordmark"><b>Lineo</b></div>
+    </div>
+
+    <button class="lineo-btn" id="btn-open" title="Avaa kuva (Ctrl+O)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="btn-label">Avaa kuva</span>
+    </button>
+    <input type="file" id="file-input" accept="image/*,.lineo" hidden>
+    <input type="file" id="palette-input" accept=".json,application/json" hidden>
+
+    <div class="menu-wrap">
+      <button class="lineo-btn" id="btn-file" title="Tiedosto: projekti, vienti, pikanäppäimet" aria-haspopup="true" aria-expanded="false" aria-controls="file-menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+        <span class="btn-label">Tiedosto</span>
+      </button>
+      <div class="lineo-menu" id="file-menu" role="menu" hidden>
+        <button role="menuitem" data-file="new"><span>Uusi (tyhjä aloitusnäkymä)</span><kbd>Ctrl+Alt+N</kbd></button>
+        <button role="menuitem" data-file="open"><span>Avaa kuva tai projekti…</span><kbd>Ctrl+O</kbd></button>
+        <hr>
+        <button role="menuitem" data-file="save"><span>Tallenna projekti</span><kbd>Ctrl+S</kbd></button>
+        <button role="menuitem" data-file="save-as"><span>Tallenna projekti nimellä…</span><kbd>Ctrl+Shift+S</kbd></button>
+        <button role="menuitem" data-file="export"><span>Vie kuva…</span><kbd>Ctrl+E</kbd></button>
+        <hr>
+        <button role="menuitem" data-file="palette-export"><span>Vie paletti…</span></button>
+        <button role="menuitem" data-file="palette-import"><span>Tuo paletti…</span></button>
+        <hr>
+        <button role="menuitem" data-file="keys"><span>Pikanäppäimet</span><kbd>?</kbd></button>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="lineo-btn" id="btn-edit" title="Muokkaa: kopioi, leikkaa, liitä, kankaan koko" aria-haspopup="true" aria-expanded="false" aria-controls="edit-menu" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <span class="btn-label">Muokkaa</span>
+      </button>
+      <div class="lineo-menu" id="edit-menu" role="menu" hidden>
+        <button role="menuitem" data-action="copy"><span>Kopioi</span><kbd>Ctrl+C</kbd></button>
+        <button role="menuitem" data-action="cut"><span>Leikkaa</span><kbd>Ctrl+X</kbd></button>
+        <button role="menuitem" data-action="paste"><span>Liitä uudelle tasolle</span><kbd>Ctrl+V</kbd></button>
+        <hr>
+        <button role="menuitem" data-action="select-all"><span>Valitse kaikki</span><kbd>Ctrl+A</kbd></button>
+        <button role="menuitem" data-action="deselect"><span>Poista valinta</span><kbd>Ctrl+D</kbd></button>
+        <button role="menuitem" data-action="invert"><span>Käännä valinta</span><kbd>Ctrl+Shift+I</kbd></button>
+        <hr>
+        <button role="menuitem" data-action="canvas"><span>Kankaan koko…</span><kbd>Ctrl+Alt+C</kbd></button>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="lineo-btn" id="btn-adjust" title="Säädöt ja suotimet" aria-haspopup="true" aria-expanded="false" aria-controls="adjust-menu" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+        <span class="btn-label">Säädöt</span>
+      </button>
+      <div class="lineo-menu" id="adjust-menu" role="menu" hidden>
+        <button role="menuitem" data-adjust="bc"><span>Kirkkaus / kontrasti…</span></button>
+        <button role="menuitem" data-adjust="hs"><span>Sävy / kylläisyys…</span><kbd>Ctrl+U</kbd></button>
+        <button role="menuitem" data-adjust="levels"><span>Levels…</span><kbd>Ctrl+L</kbd></button>
+        <button role="menuitem" data-adjust="curves"><span>Käyrät…</span><kbd>Ctrl+M</kbd></button>
+        <hr>
+        <button role="menuitem" data-adjust="gray"><span>Mustavalkoinen</span></button>
+        <button role="menuitem" data-adjust="invert"><span>Käänteiset värit</span><kbd>Ctrl+I</kbd></button>
+        <hr>
+        <button role="menuitem" data-adjust="blur"><span>Sumennus…</span></button>
+        <button role="menuitem" data-adjust="sharpen"><span>Terävöinti…</span></button>
+      </div>
+    </div>
+
+    <div class="lineo-spacer"></div>
+
+    <span class="topbar-file" id="file-name"></span>
+
+    <button class="lineo-btn lineo-btn-primary" id="btn-export" disabled title="Vie kuva: maalaus ja ääriviivat yhtenä kuvana, pelkät ääriviivat, kohteen leikkaus, SVG (Ctrl+E)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+      <span class="btn-label">Vie</span>
+    </button>
+
+    <button class="lineo-btn panel-toggle" id="btn-panel" title="Näytä tai piilota säädöt" aria-controls="side-panel" aria-expanded="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      <span class="btn-label">Säädöt</span>
+    </button>
+  </header>
+
+  <main class="workspace" id="workspace">
+    <canvas id="view" class="view-canvas tool-hand"></canvas>
+
+    <div class="toolbar" id="toolbar" role="toolbar" aria-label="Työkalut" hidden>
+      <button class="tool-btn" data-tool="hand" title="Käsi – liikuta ja zoomaa näkymää (H, välilyönti)" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.4l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="ai" title="Tekoälyrajaus – klikkaa kohdetta (W)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 16l.6 1.4L7 18l-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="edit" title="Kynä – piirrä viivoja pisteillä ja muokkaa niitä (P)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c3-9 7-13 16-16"/><rect x="2.5" y="18.5" width="3" height="3" fill="currentColor"/><rect x="18.5" y="2.5" width="3" height="3" fill="currentColor"/><path d="M11 9l-5-2M11 9l4 5"/><circle cx="11" cy="9" r="1.6" fill="currentColor"/></svg>
+      </button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="tool-btn" data-tool="brush" title="Sivellin – pehmeä piirto (B)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L11 15.8l-3.6-3.6z"/><path d="M7.4 12.2C5 12.2 4 14 4 15.5 4 17 3 18.3 2 19c3 1.6 7 .6 8.2-2.2.5-1.1.4-2.1-.8-2.8"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="pen" title="Tussi – tarkka viiva (N)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18z"/><path d="M2 2l7.6 7.6"/><circle cx="11" cy="11" r="2"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="eraser" title="Pyyhekumi (E)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H9l-5.3-5.3a1.5 1.5 0 0 1 0-2.1l8.9-8.9a1.5 1.5 0 0 1 2.1 0l5.6 5.6a1.5 1.5 0 0 1 0 2.1L12 20"/><path d="M8.5 8.5l7 7"/></svg>
+      </button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="tool-btn" data-tool="rect" title="Suorakulmiovalinta (M) – vedä alue. Shift = lisää, Alt = vähennä" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1" stroke-dasharray="3 2.5"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="lasso" title="Lasso (L) – piirrä vapaa rajaus. Shift = lisää, Alt = vähennä" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c5 0 8 2 8 5s-3 5-8 5c-1.5 0-2.6-.2-3.5-.6" stroke-dasharray="3 2.5"/><path d="M4 9c0-3 3.5-5 8-5"  stroke-dasharray="3 2.5"/><path d="M8.5 13.4C6 14.5 6 17 8 18s4 .5 3.5-1.5"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="wand" title="Taikasauva (Shift+W) – valitse samanväriset pikselit" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 15 9"/><path d="M15 3v3M13.5 4.5h3M20 9v3M18.5 10.5h3M10 3.5v2M9 4.5h2"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="move" title="Siirrä (V) – siirrä valintaa tai tasoa. Alt-vedolla kopioi" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>
+      </button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="tool-btn" data-tool="bucket" title="Täyttö (K) – täytä alue värillä" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l7-7 7 7-7 7z"/><path d="M5 11h14"/><path d="M20 15c1 1.5 2 2.5 2 3.5a2 2 0 0 1-4 0c0-1 1-2 2-3.5z"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="gradient" title="Liukuväri (G) – vedä suunta" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 8v8" opacity=".95"/><path d="M10 8v8" opacity=".75"/><path d="M13 8v8" opacity=".55"/><path d="M16 8v8" opacity=".35"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="picker" title="Pipetti (I) – poimi väri. Alt-klikkaus toimii myös siveltimellä ja täytöllä" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3.5a2.1 2.1 0 0 0-3 0L14 7l-1.5-1.5-1.5 1.5 1.5 1.5-7 7V19h3.5l7-7 1.5 1.5 1.5-1.5L17 12l3.5-3.5a2.1 2.1 0 0 0 0-3z"/></svg>
+      </button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="tool-btn" data-tool="transform" title="Muunnos (T) – skaalaa, kierrä ja siirrä" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="12" height="11"/><path d="M12 8V3.5"/><circle cx="12" cy="3.5" r="1.2"/><rect x="4.5" y="6.5" width="3" height="3" fill="currentColor"/><rect x="16.5" y="17.5" width="3" height="3" fill="currentColor"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="crop" title="Rajaus (C) – rajaa kuva" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/></svg>
+      </button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="tool-btn" id="btn-undo" title="Kumoa (Ctrl+Z)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-redo" title="Tee uudelleen (Ctrl+Shift+Z)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+      </button>
+    </div>
+
+    <div class="ai-status" id="ai-status" role="status" hidden>
+      <span id="ai-status-text"></span>
+      <div class="progress"><div class="progress-bar" id="ai-progress"></div></div>
+    </div>
+
+    <div class="empty-state" id="empty-state">
+      <div class="empty-card">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="6" y="9" width="36" height="30" rx="4"/>
+          <path d="m6 33 10-10 8 8 6-6 12 12"/>
+          <circle cx="32" cy="18" r="3"/>
+        </svg>
+        <h2 class="only-pointer">Raahaa maalauksen kuva tähän</h2>
+        <p class="only-pointer">tai</p>
+        <button class="lineo-btn lineo-btn-primary" id="btn-open-empty">Valitse kuva</button>
+        <p class="lineo-hint">JPG, PNG, WebP … Kuva käsitellään vain tällä koneella, mitään ei lähetetä minnekään.</p>
+      </div>
+    </div>
+
+    <div class="drop-overlay" id="drop-overlay"><div>Pudota kuva</div></div>
+  </main>
+
+  <aside class="lineo-panel side-panel" id="side-panel">
+    <section class="lineo-section" id="paint-section" hidden>
+      <div class="lineo-section-head" id="paint-title">Sivellin</div>
+      <div class="lineo-section-body">
+        <div class="lineo-field" id="brush-size-field">
+          <label class="lineo-field-row" for="brush-size">Koko <output class="lineo-value" id="brush-size-out"></output></label>
+          <input class="lineo-range" type="range" id="brush-size" min="0" max="100" step="0.5" value="50">
+        </div>
+        <div class="lineo-field" id="brush-hardness-field">
+          <label class="lineo-field-row" for="brush-hardness">Kovuus <output class="lineo-value" id="brush-hardness-out"></output></label>
+          <input class="lineo-range" type="range" id="brush-hardness" min="0" max="100" step="1" value="50">
+        </div>
+        <div class="lineo-field" id="brush-stab-field">
+          <label class="lineo-field-row" for="brush-stab">Stabilointi <output class="lineo-value" id="brush-stab-out"></output></label>
+          <input class="lineo-range" type="range" id="brush-stab" min="0" max="100" step="1" value="0">
+        </div>
+        <div class="lineo-field lineo-field-inline" id="brush-color-field">
+          <label class="lineo-field-row" for="brush-color">Väri</label>
+          <input class="lineo-color" type="color" id="brush-color" value="#111111">
+        </div>
+        <div class="palette-box" data-target="brush">
+          <div class="lineo-field-row">Oma paletti</div>
+          <div class="palette"></div>
+          <div class="btn-row"><button class="lineo-btn" data-pal="add">+ Lisää väri</button><button class="lineo-btn" data-pal="remove" aria-pressed="false">Poista väri</button></div>
+        </div>
+        <p class="lineo-hint" id="paint-hint">Piirtää aktiiviselle rasteritasolle. Koon saa näppäimillä [ ja ]. Kahdella sormella zoomaat ja liikutat kuvaa.</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="fill-section" hidden>
+      <div class="lineo-section-head" id="fill-title">Täyttö</div>
+      <div class="lineo-section-body">
+        <div id="gradient-fields">
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="grad-type">Tyyppi</label>
+            <select class="lineo-select" id="grad-type">
+              <option value="linear">Lineaarinen</option>
+              <option value="radial">Säteittäinen</option>
+            </select>
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="grad-mode">Päättyy</label>
+            <select class="lineo-select" id="grad-mode">
+              <option value="color">toiseen väriin</option>
+              <option value="transparent">läpinäkyväksi</option>
+            </select>
+          </div>
+          <div class="lineo-field lineo-field-inline" id="grad-color2-field">
+            <label class="lineo-field-row" for="grad-color2">Toinen väri</label>
+            <input class="lineo-color" type="color" id="grad-color2" value="#ffffff">
+          </div>
+          <p class="lineo-hint">Vedä kuvassa alkupisteestä loppupisteeseen. Ensimmäinen väri on Väri-kenttä ylhäällä.</p>
+        </div>
+        <div id="bucket-fields">
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="fill-source">Mistä alue haetaan</label>
+            <select class="lineo-select" id="fill-source">
+              <option value="lines">Viivatasot (ei alkuperäistä)</option>
+              <option value="original">Alkuperäinen kuva</option>
+              <option value="active">Aktiivinen taso</option>
+            </select>
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="fill-tol">Toleranssi <output class="lineo-value" id="fill-tol-out"></output></label>
+            <input class="lineo-range" type="range" id="fill-tol" min="0" max="128" step="1" value="32">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="fill-grow">Reunan laajennus <output class="lineo-value" id="fill-grow-out"></output></label>
+            <input class="lineo-range" type="range" id="fill-grow" min="0" max="8" step="1" value="1">
+          </div>
+          <p class="lineo-hint">Napauta aluetta. Täyttö menee aktiiviselle rasteritasolle (alkuperäisellä tai vektoritasolla uudelle tasolle). Laajennus ulottaa täytön hieman viivojen alle.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="picker-section" hidden>
+      <div class="lineo-section-head">Pipetti</div>
+      <div class="lineo-section-body">
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="pick-source">Mistä väri poimitaan</label>
+          <select class="lineo-select" id="pick-source">
+            <option value="original">Alkuperäinen kuva</option>
+            <option value="active">Aktiivinen taso</option>
+            <option value="visible">Näkyvä kuva (kaikki tasot)</option>
+          </select>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="pick-size">Näyte</label>
+          <select class="lineo-select" id="pick-size">
+            <option value="0">Yksi piste</option>
+            <option value="1">3 × 3 keskiarvo</option>
+            <option value="2">5 × 5 keskiarvo</option>
+          </select>
+        </div>
+        <div class="lineo-field lineo-field-inline">
+          <span class="lineo-field-row">Poimittu väri</span>
+          <span class="pick-result"><span class="swatch-big" id="pick-swatch"></span><output class="lineo-value" id="pick-hex">–</output></span>
+        </div>
+        <div class="palette-box" data-target="brush">
+          <div class="lineo-field-row">Oma paletti</div>
+          <div class="palette"></div>
+          <div class="btn-row"><button class="lineo-btn" data-pal="add">+ Lisää väri</button><button class="lineo-btn" data-pal="remove" aria-pressed="false">Poista väri</button></div>
+        </div>
+        <p class="lineo-hint">Napauta tai raahaa kuvassa. Väri tulee siveltimen, täytön ja liukuvärin väriksi. Siveltimellä, tussilla ja täytöllä Alt-klikkaus poimii värin.</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="adjust-section" hidden>
+      <div class="lineo-section-head" id="adjust-title">Säätö</div>
+      <div class="lineo-section-body">
+        <div class="adj-block" id="adj-bc" hidden>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-brightness">Kirkkaus <output class="lineo-value" id="adj-brightness-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-brightness" min="-100" max="100" step="1" value="0">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-contrast">Kontrasti <output class="lineo-value" id="adj-contrast-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-contrast" min="-100" max="100" step="1" value="0">
+          </div>
+        </div>
+        <div class="adj-block" id="adj-hs" hidden>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-hue">Sävy <output class="lineo-value" id="adj-hue-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-hue" min="-180" max="180" step="1" value="0">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-sat">Kylläisyys <output class="lineo-value" id="adj-sat-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-sat" min="-100" max="100" step="1" value="0">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-light">Vaaleus <output class="lineo-value" id="adj-light-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-light" min="-100" max="100" step="1" value="0">
+          </div>
+        </div>
+        <div class="adj-block" id="adj-levels" hidden>
+          <canvas class="hist-canvas" id="lv-hist" width="256" height="72"></canvas>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="lv-channel">Kanava</label>
+            <select class="lineo-select" id="lv-channel">
+              <option value="rgb">RGB</option><option value="r">Punainen</option><option value="g">Vihreä</option><option value="b">Sininen</option>
+            </select>
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="lv-inblack">Tulo: musta <output class="lineo-value" id="lv-inblack-out"></output></label>
+            <input class="lineo-range" type="range" id="lv-inblack" min="0" max="254" step="1" value="0">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="lv-gamma">Keskisävy (gamma) <output class="lineo-value" id="lv-gamma-out"></output></label>
+            <input class="lineo-range" type="range" id="lv-gamma" min="10" max="400" step="1" value="100">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="lv-inwhite">Tulo: valkoinen <output class="lineo-value" id="lv-inwhite-out"></output></label>
+            <input class="lineo-range" type="range" id="lv-inwhite" min="1" max="255" step="1" value="255">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="lv-outblack">Lähtö: musta <output class="lineo-value" id="lv-outblack-out"></output></label>
+            <input class="lineo-range" type="range" id="lv-outblack" min="0" max="255" step="1" value="0">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="lv-outwhite">Lähtö: valkoinen <output class="lineo-value" id="lv-outwhite-out"></output></label>
+            <input class="lineo-range" type="range" id="lv-outwhite" min="0" max="255" step="1" value="255">
+          </div>
+          <div class="btn-row">
+            <button class="lineo-btn" id="lv-auto">Automaattinen</button>
+            <button class="lineo-btn" id="lv-reset">Nollaa</button>
+          </div>
+        </div>
+        <div class="adj-block" id="adj-curves" hidden>
+          <canvas class="curve-canvas" id="cv-canvas" width="256" height="256"></canvas>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="cv-channel">Kanava</label>
+            <select class="lineo-select" id="cv-channel">
+              <option value="rgb">RGB</option><option value="r">Punainen</option><option value="g">Vihreä</option><option value="b">Sininen</option>
+            </select>
+          </div>
+          <div class="btn-row"><button class="lineo-btn" id="cv-reset">Nollaa käyrä</button></div>
+          <p class="lineo-hint">Napauta käyrää lisätäksesi pisteen ja raahaa sitä. Piste poistuu kaksoisnapautuksella.</p>
+        </div>
+        <div class="adj-block" id="adj-blur" hidden>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-blur-radius">Säde <output class="lineo-value" id="adj-blur-radius-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-blur-radius" min="0.5" max="60" step="0.5" value="4">
+          </div>
+        </div>
+        <div class="adj-block" id="adj-sharpen" hidden>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-sharp-amount">Määrä <output class="lineo-value" id="adj-sharp-amount-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-sharp-amount" min="0" max="300" step="1" value="100">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-sharp-radius">Säde <output class="lineo-value" id="adj-sharp-radius-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-sharp-radius" min="0.5" max="20" step="0.5" value="1.5">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="adj-sharp-threshold">Kynnys <output class="lineo-value" id="adj-sharp-threshold-out"></output></label>
+            <input class="lineo-range" type="range" id="adj-sharp-threshold" min="0" max="50" step="1" value="0">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn lineo-btn-primary" id="adj-apply">Käytä</button>
+          <button class="lineo-btn" id="adj-cancel">Peru</button>
+        </div>
+        <p class="lineo-hint" id="adj-hint">Muutos kohdistuu aktiiviseen rasteritasoon (tai valintaan). Esikatselu on kevennetty isoilla kuvilla, ja täysi tarkkuus lasketaan, kun painat Käytä. Enter käyttää, Esc peruu.</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="select-section" hidden>
+      <div class="lineo-section-head">
+        Valinta
+        <span class="lineo-spacer"></span>
+        <span class="lineo-value" id="sel-info"></span>
+      </div>
+      <div class="lineo-section-body">
+        <div class="segmented" role="group" aria-label="Valinnan tapa">
+          <button class="seg-btn is-on" id="sel-new" aria-pressed="true">Uusi</button>
+          <button class="seg-btn" id="sel-add" aria-pressed="false">+ Lisää</button>
+          <button class="seg-btn" id="sel-sub" aria-pressed="false">− Vähennä</button>
+        </div>
+        <div id="wand-fields">
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="wand-source">Mistä alue haetaan</label>
+            <select class="lineo-select" id="wand-source">
+              <option value="original">Alkuperäinen kuva</option>
+              <option value="active">Aktiivinen taso</option>
+              <option value="lines">Viivatasot (ei alkuperäistä)</option>
+            </select>
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="wand-tol">Toleranssi <output class="lineo-value" id="wand-tol-out"></output></label>
+            <input class="lineo-range" type="range" id="wand-tol" min="0" max="128" step="1" value="32">
+          </div>
+          <div class="lineo-field">
+            <label class="lineo-field-row" for="wand-contig">Alue</label>
+            <select class="lineo-select" id="wand-contig">
+              <option value="1">Vain vierekkäiset</option>
+              <option value="0">Koko kuvasta</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn" id="sel-all" title="Valitse kaikki (Ctrl+A)">Kaikki</button>
+          <button class="lineo-btn" id="sel-none" title="Poista valinta (Ctrl+D)">Poista valinta</button>
+          <button class="lineo-btn" id="sel-invert" title="Käännä valinta (Ctrl+Shift+I)">Käännä</button>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="sel-grow-amount">Laajenna / supista <output class="lineo-value" id="sel-grow-out"></output></label>
+          <input class="lineo-range" type="range" id="sel-grow-amount" min="1" max="20" step="1" value="2">
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn" id="sel-expand">Laajenna</button>
+          <button class="lineo-btn" id="sel-contract">Supista</button>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn" id="sel-copy" title="Kopioi valinta uudelle tasolle (Ctrl+J)">Kopioi uudelle tasolle</button>
+          <button class="lineo-btn" id="sel-cut" title="Leikkaa valinta uudelle tasolle">Leikkaa uudelle tasolle</button>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn" id="sel-delete" title="Poista valitut pikselit (Delete)">Poista sisältö</button>
+          <button class="lineo-btn" id="sel-fill" title="Täytä valinta värillä (Alt+Backspace)">Täytä värillä</button>
+        </div>
+        <p class="lineo-hint" id="select-hint">Vedä alue kuvaan. Shift-vedolla lisäät ja Alt-vedolla vähennät (puhelimessa Lisää / Vähennä -napit). Siirrä-työkalu (V) siirtää valitut pikselit, Alt-vedolla kopioi. Piirto, täyttö ja liukuväri rajautuvat valintaan.</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="transform-section" hidden>
+      <div class="lineo-section-head">Muunnos</div>
+      <div class="lineo-section-body">
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="tf-angle">Kulma <output class="lineo-value" id="tf-angle-out"></output></label>
+          <input class="lineo-range" type="range" id="tf-angle" min="-180" max="180" step="1" value="0">
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="tf-ratio">Mittasuhteet</label>
+          <select class="lineo-select" id="tf-ratio">
+            <option value="keep">Säilytä (Shift = vapaa)</option>
+            <option value="free">Vapaa (Shift = säilytä)</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn" id="tf-flip-h">Peilaa ↔</button>
+          <button class="lineo-btn" id="tf-flip-v">Peilaa ↕</button>
+          <button class="lineo-btn" id="tf-rot90">Kierrä 90°</button>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn lineo-btn-primary" id="tf-apply">Käytä</button>
+          <button class="lineo-btn" id="tf-cancel">Peru</button>
+        </div>
+        <p class="lineo-hint">Vedä kulmia ja reunoja skaalataksesi, ylhäällä olevaa pallukkaa kiertääksesi ja laatikon sisältä siirtääksesi. Enter käyttää, Esc peruu. Toimii valinnalle tai koko tasolle (myös vektorikohteille).</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="crop-section" hidden>
+      <div class="lineo-section-head">
+        Rajaus
+        <span class="lineo-spacer"></span>
+        <span class="lineo-value" id="crop-info"></span>
+      </div>
+      <div class="lineo-section-body">
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="crop-ratio">Mittasuhde</label>
+          <select class="lineo-select" id="crop-ratio">
+            <option value="free">Vapaa</option>
+            <option value="1">1 : 1</option>
+            <option value="1.3333">4 : 3</option>
+            <option value="0.75">3 : 4</option>
+            <option value="1.5">3 : 2</option>
+            <option value="0.6667">2 : 3</option>
+            <option value="1.7778">16 : 9</option>
+            <option value="0.5625">9 : 16</option>
+          </select>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="crop-bg">Kuvan ulkopuolinen alue</label>
+          <select class="lineo-select" id="crop-bg">
+            <option value="transparent">Läpinäkyvä</option>
+            <option value="white">Valkoinen</option>
+            <option value="black">Musta</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn lineo-btn-primary" id="crop-apply">Rajaa</button>
+          <button class="lineo-btn" id="crop-cancel">Peru</button>
+        </div>
+        <p class="lineo-hint">Vedä kulmia tai reunoja, tai siirrä aluetta sen sisältä. Voit vetää rajauksen myös kuvan ulkopuolelle (zoomaa ensin ulos), jolloin kangas suurenee. Rajaus koskee kaikkia tasoja. Ääriviivat lasketaan uudelleen rajatusta kuvasta (jos et ole muokannut ääriviivatasoa käsin). Enter rajaa, Esc peruu.</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="ai-section" hidden>
+      <div class="lineo-section-head">Tekoälyrajaus</div>
+      <div class="lineo-section-body">
+        <div class="segmented" role="group" aria-label="Klikkauksen toiminto">
+          <button class="seg-btn is-on" id="ai-add" aria-pressed="true">+ Lisää</button>
+          <button class="seg-btn" id="ai-remove" aria-pressed="false">− Poista</button>
+        </div>
+        <p class="lineo-hint" id="ai-error" role="alert" hidden></p>
+        <p class="lineo-hint" id="ai-hint">Klikkaa kohdetta, esim. härkää. Jokainen lisäklikkaus rajaa oman alueensa: ulkoreuna kiertää kaikki, ja vierekkäisten alueiden väliin tulee yksi rajaviiva, Poista-tilassa (tai Alt-klikkauksella) klikkaus poistaa siitä osan.</p>
+        <div class="btn-row">
+          <button class="lineo-btn lineo-btn-primary" id="ai-done" disabled>Valmis – tee ääriviiva</button>
+          <button class="lineo-btn" id="ai-cancel" disabled title="Peru rajaus (Esc)">Peru</button>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="ai-method">Menetelmä</label>
+          <select class="lineo-select" id="ai-method">
+            <option value="fast">Tekoäly – nopea (pienempi lataus)</option>
+            <option value="accurate">Tekoäly – tarkka (iso lataus)</option>
+            <option value="color">Värialue (ei tekoälyä, toimii heti)</option>
+          </select>
+        </div>
+        <div class="lineo-field" id="ai-tolerance-field" hidden>
+          <label class="lineo-field-row" for="ai-tolerance">Värin toleranssi <output class="lineo-value" id="ai-tolerance-out"></output></label>
+          <input class="lineo-range" type="range" id="ai-tolerance" min="5" max="120" step="1" value="40">
+        </div>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="vector-section" hidden>
+      <div class="lineo-section-head">
+        Vektoriviiva
+        <span class="lineo-spacer"></span>
+        <span class="lineo-value" id="vec-count"></span>
+      </div>
+      <div class="lineo-section-body">
+        <div class="segmented style-row" id="vector-styles" role="group" aria-label="Ääriviivatyyli">
+          <button class="seg-btn" data-style="thin" aria-pressed="false">Ohut tussi</button>
+          <button class="seg-btn" data-style="comic" aria-pressed="false">Paksu sarjakuva</button>
+          <button class="seg-btn" data-style="pencil" aria-pressed="false">Lyijykynä</button>
+        </div>
+        <div class="btn-row"><button class="lineo-btn" id="vec-style-all" title="Käytä valittua tyyliä kaikille kohteille">Tyyli kaikille kohteille</button></div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="vec-width">Viivan paksuus <output class="lineo-value" id="vec-width-out"></output></label>
+          <input class="lineo-range" type="range" id="vec-width" min="0.5" max="40" step="0.5" value="3">
+        </div>
+        <div class="lineo-field lineo-field-inline">
+          <label class="lineo-field-row" for="vec-color">Viivan väri</label>
+          <input class="lineo-color" type="color" id="vec-color" value="#111111">
+        </div>
+        <div class="palette-box" data-target="vec">
+          <div class="lineo-field-row">Oma paletti</div>
+          <div class="palette"></div>
+          <div class="btn-row"><button class="lineo-btn" data-pal="add">+ Lisää väri</button><button class="lineo-btn" data-pal="remove" aria-pressed="false">Poista väri</button></div>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="vec-detail">Muodon tarkkuus <output class="lineo-value" id="vec-detail-out"></output></label>
+          <input class="lineo-range" type="range" id="vec-detail" min="0" max="100" step="1" value="50">
+        </div>
+        <div class="btn-row" id="node-tools">
+          <button class="lineo-btn" id="node-toggle" disabled title="Vaihda kulma ↔ kaari (tuplaklikkaus pisteeseen)">Kulma / kaari</button>
+          <button class="lineo-btn" id="node-delete" disabled title="Poista valittu piste (Delete)">Poista piste</button>
+        </div>
+        <div class="btn-row">
+          <button class="lineo-btn" id="vec-to-sel" title="Tee kohteen alueesta valinta (Shift = lisää). Sen jälkeen Ctrl+J kopioi kohteen uudelle tasolle">Valinta kohteesta</button>
+        </div>
+        <p class="lineo-hint" id="vec-hint">Kynä (P): klikkaa tyhjää aloittaaksesi uuden viivan, lisää pisteitä klikkaamalla (raahaus tekee kaaren), sulje klikkaamalla ensimmäistä pistettä, Enter lopettaa. Olemassa olevan viivan pisteitä ja kahvoja voi raahata, viivaa klikkaamalla saa uuden pisteen ja Alt-raahaus taittaa kahvan.</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="start-hint" hidden>
+      <div class="lineo-section-head">Aloita</div>
+      <div class="lineo-section-body">
+        <p class="lineo-hint">Kuva näkyy sellaisenaan. Valitse työkalu vasemmalta:</p>
+        <p class="lineo-hint"><b>P</b> Kynä: piirrä ääriviiva itse klikkaamalla pisteitä (raahaus tekee kaaren) ja muokkaa sitä pisteistä.<br><b>W</b> Tekoäly: klikkaa kohdetta, niin ääriviiva syntyy itsestään.</p>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="contour-section" hidden>
+      <div class="lineo-section-head is-collapsible" id="contour-head" role="button" tabindex="0" aria-expanded="true" title="Napauta piilottaaksesi tai näyttääksesi">
+        Automaattiset ääriviivat
+        <span class="lineo-spacer"></span>
+        <span class="lineo-spinner" id="busy" hidden></span>
+      </div>
+      <div class="lineo-section-body">
+        <div id="contour-start" hidden>
+          <p class="lineo-hint">Ääriviivoja ei ole vielä luotu, ja kuva näkyy sellaisenaan. Paina nappia, niin ääriviivat lasketaan automaattisesti. Voit säätää niitä sen jälkeen, tai tehdä ne itse tekoälyllä (W) tai piirtämällä.</p>
+          <div class="btn-row"><button class="lineo-btn lineo-btn-primary" id="contour-create">Luo ääriviivat</button></div>
+        </div>
+        <div id="contour-controls">
+        <div class="segmented style-row" id="contour-styles" role="group" aria-label="Ääriviivatyyli">
+          <button class="seg-btn" data-style="thin" aria-pressed="false">Ohut tussi</button>
+          <button class="seg-btn" data-style="comic" aria-pressed="false">Paksu sarjakuva</button>
+          <button class="seg-btn" data-style="pencil" aria-pressed="false">Lyijykynä</button>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="detail">Tarkkuus <output class="lineo-value" id="detail-out"></output></label>
+          <input class="lineo-range" type="range" id="detail" min="0" max="100" step="1" value="50">
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="thickness">Viivan paksuus <output class="lineo-value" id="thickness-out"></output></label>
+          <input class="lineo-range" type="range" id="thickness" min="0.5" max="24" step="0.5" value="2">
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="noise">Kohinan poisto <output class="lineo-value" id="noise-out"></output></label>
+          <input class="lineo-range" type="range" id="noise" min="0" max="100" step="1" value="35">
+        </div>
+        <div class="lineo-field lineo-field-inline">
+          <label class="lineo-field-row" for="line-color">Viivan väri</label>
+          <input class="lineo-color" type="color" id="line-color" value="#111111">
+        </div>
+        <div class="palette-box" data-target="line">
+          <div class="lineo-field-row">Oma paletti</div>
+          <div class="palette"></div>
+          <div class="btn-row"><button class="lineo-btn" data-pal="add">+ Lisää väri</button><button class="lineo-btn" data-pal="remove" aria-pressed="false">Poista väri</button></div>
+        </div>
+        <p class="lineo-hint">Tarkkuus lisää yksityiskohtia, kohinan poisto siivoaa siveltimenjäljen ja pienet roskaviivat pois.</p>
+        </div>
+        <div id="contour-remove" hidden>
+          <div class="btn-row"><button class="lineo-btn" id="contour-remove-btn" title="Poista automaattiset ääriviivat ja palauta kuva sellaiseksi kuin se oli (voit kumota)">Poista automaattiset ääriviivat</button></div>
+        </div>
+        <div id="contour-edited" hidden>
+          <p class="lineo-hint">Ääriviivatasoa on muokattu käsin, joten säätimet on lukittu. Uusi laskenta poistaa käsin tehdyt muutokset (voit kumota sen).</p>
+          <div class="btn-row"><button class="lineo-btn" id="contour-reset">Laske ääriviivat uudelleen</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lineo-section" id="orig-section" hidden>
+      <div class="lineo-section-head is-collapsible" id="orig-head" role="button" tabindex="0" aria-expanded="true" title="Napauta piilottaaksesi tai näyttääksesi">Alkuperäinen kuva</div>
+      <div class="lineo-section-body">
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="orig-opacity">Läpinäkyvyys <output class="lineo-value" id="orig-opacity-out"></output></label>
+          <input class="lineo-range" type="range" id="orig-opacity" min="0" max="100" step="1" value="35">
+        </div>
+      </div>
+    </section>
+
+    <section class="lineo-section">
+      <div class="lineo-section-head">Tasot</div>
+      <div class="layer-actions" role="toolbar" aria-label="Tasojen toiminnot">
+        <button class="lineo-icon-btn" id="layer-add" title="Uusi taso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button class="lineo-icon-btn" id="layer-up" title="Siirrä tasoa ylös">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+        </button>
+        <button class="lineo-icon-btn" id="layer-down" title="Siirrä tasoa alas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+        </button>
+        <button class="lineo-icon-btn" id="layer-lock" title="Lukitse taso (ei voi piirtää, muokata eikä poistaa)" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        </button>
+        <span class="lineo-spacer"></span>
+        <button class="lineo-icon-btn" id="layer-delete" title="Poista taso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+        </button>
+      </div>
+      <div class="lineo-section-body layer-opacity-body">
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="layer-opacity">Tason läpinäkyvyys <output class="lineo-value" id="layer-opacity-out"></output></label>
+          <input class="lineo-range" type="range" id="layer-opacity" min="0" max="100" step="1" value="100">
+        </div>
+      </div>
+      <ul class="layer-list" id="layer-list"></ul>
+    </section>
+  </aside>
+
+  <footer class="lineo-statusbar">
+    <span id="status-size">Ei kuvaa</span>
+    <button class="status-btn" id="btn-fit" title="Sovita ikkunaan (Ctrl+0, tuplaklikkaus)" hidden></button>
+    <span class="lineo-spacer"></span>
+    <span class="lineo-mono" id="status-edges"></span>
+  </footer>
+
+  <div class="lineo-modal" id="canvas-modal" hidden>
+    <div class="lineo-modal-card" role="dialog" aria-modal="true" aria-labelledby="canvas-title">
+      <h2 id="canvas-title">Kankaan koko</h2>
+      <p class="lineo-hint" id="canvas-current"></p>
+      <div class="modal-row">
+        <label for="canvas-w">Leveys</label>
+        <input class="lineo-number" type="number" id="canvas-w" min="1" step="1" inputmode="numeric"><span>px</span>
+      </div>
+      <div class="modal-row">
+        <label for="canvas-h">Korkeus</label>
+        <input class="lineo-number" type="number" id="canvas-h" min="1" step="1" inputmode="numeric"><span>px</span>
+      </div>
+      <div class="lineo-field">
+        <label class="lineo-field-row" for="canvas-link">Mittasuhteet</label>
+        <select class="lineo-select" id="canvas-link">
+          <option value="free">Vapaa</option>
+          <option value="keep">Säilytä</option>
+        </select>
+      </div>
+      <div class="lineo-field">
+        <div class="lineo-field-row">Ankkuri</div>
+        <div class="anchor-grid" id="canvas-anchor" role="group" aria-label="Ankkuri"></div>
+      </div>
+      <div class="lineo-field">
+        <label class="lineo-field-row" for="canvas-bg">Uusi alue alkuperäisessä kuvassa</label>
+        <select class="lineo-select" id="canvas-bg">
+          <option value="transparent">Läpinäkyvä</option>
+          <option value="white">Valkoinen</option>
+          <option value="black">Musta</option>
+        </select>
+      </div>
+      <p class="lineo-hint">Ankkuri kertoo, mihin kohtaan vanha kuva jää. Suurennettaessa uusi alue tulee vastakkaisille sivuille, pienennettäessä kuva rajautuu ankkurin mukaan. Muut tasot saavat uuden alueen läpinäkyvänä. Voit kumota.</p>
+      <div class="btn-row">
+        <button class="lineo-btn lineo-btn-primary" id="canvas-apply">Käytä</button>
+        <button class="lineo-btn" id="canvas-cancel">Peru</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="lineo-modal" id="export-modal" hidden>
+    <div class="lineo-modal-card" role="dialog" aria-modal="true" aria-labelledby="export-title">
+      <h2 id="export-title">Vie kuva</h2>
+      <div class="lineo-field">
+        <label class="lineo-field-row" for="ex-content">Mitä viedään</label>
+        <select class="lineo-select" id="ex-content">
+          <option value="both">Maalaus ja ääriviivat yhtenä kuvana</option>
+          <option value="lines">Pelkät ääriviivat (ei alkuperäistä kuvaa)</option>
+          <option value="cutout">Kohteen leikkaus (alkuperäisen kuvan pikselit)</option>
+        </select>
+      </div>
+      <div id="ex-cut-block" hidden>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="ex-cut-source">Kohde</label>
+          <select class="lineo-select" id="ex-cut-source"></select>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="ex-cut-crop">Rajaus</label>
+          <select class="lineo-select" id="ex-cut-crop">
+            <option value="1">Rajaa kohteen reunoihin</option>
+            <option value="0">Koko kuvan kokoinen</option>
+          </select>
+        </div>
+        <div class="lineo-field">
+          <label class="lineo-field-row" for="ex-cut-lines">Ääriviivat</label>
+          <select class="lineo-select" id="ex-cut-lines">
+            <option value="1">Mukaan kohteen ääriviiva</option>
+            <option value="0">Ei ääriviivaa</option>
+          </select>
+        </div>
+      </div>
+      <div class="lineo-field" id="ex-bg-block">
+        <label class="lineo-field-row" for="ex-bg">Tausta</label>
+        <select class="lineo-select" id="ex-bg">
+          <option value="transparent">Läpinäkyvä</option>
+          <option value="white">Valkoinen</option>
+          <option value="black">Musta</option>
+          <option value="custom">Oma väri…</option>
+        </select>
+        <input class="lineo-color ex-bgcolor" type="color" id="ex-bgcolor" value="#ffffff" hidden>
+      </div>
+      <div class="lineo-field">
+        <label class="lineo-field-row" for="ex-size">Koko</label>
+        <select class="lineo-select" id="ex-size"></select>
+      </div>
+      <div class="lineo-field">
+        <label class="lineo-field-row" for="ex-format">Tiedostomuoto</label>
+        <select class="lineo-select" id="ex-format">
+          <option value="png">PNG</option>
+          <option value="jpg">JPG</option>
+          <option value="svg">SVG (vain vektoriääriviivat)</option>
+        </select>
+      </div>
+      <div class="lineo-field" id="ex-quality-block" hidden>
+        <label class="lineo-field-row" for="ex-quality">JPG-laatu <output class="lineo-value" id="ex-quality-out"></output></label>
+        <input class="lineo-range" type="range" id="ex-quality" min="50" max="100" step="1" value="92">
+      </div>
+      <p class="lineo-hint" id="ex-info"></p>
+      <div class="btn-row">
+        <button class="lineo-btn lineo-btn-primary" id="ex-download">Lataa</button>
+        <button class="lineo-btn" id="ex-cancel">Peru</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="lineo-modal" id="keys-modal" hidden>
+    <div class="lineo-modal-card" role="dialog" aria-modal="true" aria-labelledby="keys-title">
+      <h2 id="keys-title">Pikanäppäimet</h2>
+      <div class="keys-grid">
+        <h3>Työkalut</h3>
+        <dl>
+          <dt>H / välilyönti</dt><dd>Käsi (liikuta ja zoomaa)</dd>
+          <dt>W</dt><dd>Tekoälyrajaus</dd>
+          <dt>P</dt><dd>Kynä: piirrä viiva pisteillä ja muokkaa pisteitä</dd>
+          <dt>B</dt><dd>Sivellin</dd>
+          <dt>N</dt><dd>Tussi</dd>
+          <dt>E</dt><dd>Pyyhekumi</dd>
+          <dt>M</dt><dd>Suorakulmiovalinta</dd>
+          <dt>L</dt><dd>Lasso</dd>
+          <dt>Shift+W</dt><dd>Taikasauva</dd>
+          <dt>V</dt><dd>Siirrä (Alt-veto kopioi)</dd>
+          <dt>K</dt><dd>Täyttö</dd>
+          <dt>G</dt><dd>Liukuväri</dd>
+          <dt>I</dt><dd>Pipetti (Alt-klikkaus myös muilla)</dd>
+          <dt>T</dt><dd>Muunnos</dd>
+          <dt>C</dt><dd>Rajaus</dd>
+          <dt>[ ja ]</dt><dd>Siveltimen koko</dd>
+          <dt>X</dt><dd>Vaihda väri ja liukuvärin toinen väri</dd>
+          <dt>D</dt><dd>Mustavalkoiset oletusvärit</dd>
+        </dl>
+        <h3>Muokkaus</h3>
+        <dl>
+          <dt>Ctrl+Z</dt><dd>Kumoa</dd>
+          <dt>Ctrl+Shift+Z / Ctrl+Y</dt><dd>Tee uudelleen</dd>
+          <dt>Ctrl+C / X / V</dt><dd>Kopioi / leikkaa / liitä uudelle tasolle</dd>
+          <dt>Ctrl+J</dt><dd>Kopioi valinta uudelle tasolle</dd>
+          <dt>Ctrl+A / D</dt><dd>Valitse kaikki / poista valinta</dd>
+          <dt>Ctrl+Shift+I</dt><dd>Käännä valinta</dd>
+          <dt>Delete</dt><dd>Poista valinnan sisältö</dd>
+          <dt>Alt+Backspace</dt><dd>Täytä valinta värillä</dd>
+          <dt>Ctrl+Alt+C</dt><dd>Kankaan koko</dd>
+          <dt>Enter / Esc</dt><dd>Hyväksy / peru (muunnos, rajaus, säätö, tekoälyrajaus)</dd>
+        </dl>
+        <h3>Säädöt</h3>
+        <dl>
+          <dt>Ctrl+U</dt><dd>Sävy / kylläisyys</dd>
+          <dt>Ctrl+L</dt><dd>Levels</dd>
+          <dt>Ctrl+M</dt><dd>Käyrät</dd>
+          <dt>Ctrl+I</dt><dd>Käänteiset värit</dd>
+        </dl>
+        <h3>Näkymä ja tiedosto</h3>
+        <dl>
+          <dt>Ctrl+0 / Ctrl+1</dt><dd>Sovita ikkunaan / 100 %</dd>
+          <dt>Ctrl + / Ctrl −</dt><dd>Zoomaa</dd>
+          <dt>Ctrl+Alt+N</dt><dd>Uusi (tyhjä aloitusnäkymä)</dd>
+          <dt>Ctrl+O</dt><dd>Avaa kuva tai projekti</dd>
+          <dt>Ctrl+S</dt><dd>Tallenna projekti</dd>
+          <dt>Ctrl+Shift+S</dt><dd>Tallenna projekti nimellä</dd>
+          <dt>Ctrl+E</dt><dd>Vie kuva</dd>
+          <dt>? / F1</dt><dd>Tämä ohje</dd>
+        </dl>
+      </div>
+      <p class="lineo-hint">Selain voi ottaa osan Ctrl-yhdistelmistä itselleen. Kaikki toiminnot löytyvät myös valikoista.</p>
+      <div class="btn-row"><button class="lineo-btn lineo-btn-primary" id="keys-close">Sulje</button></div>
+    </div>
+  </div>
+
+  <div class="lineo-toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="js/edge-core.js"></script>
+  <script src="js/vector.js"></script>
+  <script src="js/sam.js"></script>
+  <script src="js/brush.js"></script>
+  <script src="js/select.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
