@@ -33,9 +33,9 @@ var LineoFiles = (function () {
   // buf: ArrayBuffer. Palauttaa { header, blob(nimi) } tai heittää virheen.
   function unpackProject(buf) {
     var u8 = new Uint8Array(buf);
-    if (u8.length < 12 || new TextDecoder().decode(u8.subarray(0, 8)) !== MAGIC) throw new Error('Ei Lineo-projekti');
+    if (u8.length < 12 || new TextDecoder().decode(u8.subarray(0, 8)) !== MAGIC) throw new Error(LineoI18n.t('err.notProject'));
     var hl = new DataView(buf, 8, 4).getUint32(0, true);
-    if (12 + hl > u8.length) throw new Error('Projektitiedosto on vioittunut');
+    if (12 + hl > u8.length) throw new Error(LineoI18n.t('err.projectFileCorrupt'));
     var header = JSON.parse(new TextDecoder().decode(u8.subarray(12, 12 + hl)));
     var base = 12 + hl;
     return {
@@ -44,7 +44,7 @@ var LineoFiles = (function () {
       blob: function (name) {
         var m = header.blobs.filter(function (x) { return x.name === name; })[0];
         if (!m) return null;
-        if (base + m.offset + m.length > u8.length) throw new Error('Projektitiedosto on vioittunut');
+        if (base + m.offset + m.length > u8.length) throw new Error(LineoI18n.t('err.projectFileCorrupt'));
         return new Blob([u8.subarray(base + m.offset, base + m.offset + m.length)], { type: m.type });
       }
     };

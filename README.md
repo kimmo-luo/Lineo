@@ -45,14 +45,16 @@ There is nothing to build and no dependencies to install.
 
 ## Usage
 
-The app's interface is currently in Finnish. Button names are shown below with an English translation.
+The interface is in Finnish and English. Switch the language with the **FI / EN** buttons in the
+top bar. By default Lineo uses your browser's language (Finnish, otherwise English), and your
+choice is remembered in the browser.
 
-1. Open an image with **Avaa kuva** (Open image, Ctrl+O), by dragging it onto the page, or by pasting (Ctrl+V).
-2. Make outlines with the **Kynä** (Pen, P) tool by clicking points, or with **Tekoälyrajaus**
-   (AI selection, W) by clicking an object. Press **Enter** to finish.
+1. Open an image with **Open image** (Ctrl+O), by dragging it onto the page, or by pasting (Ctrl+V).
+2. Make outlines with the **Pen** (P) tool by clicking points, or with **AI selection** (W)
+   by clicking an object. Press **Enter** to finish.
 3. Draw, adjust and organise your work in layers using the toolbar and the side panel.
-4. Save your work with **Tiedosto → Tallenna projekti** (File → Save project, Ctrl+S), or export it
-   with **Vie** (Export, Ctrl+E) as PNG, JPG or SVG.
+4. Save your work with **File → Save project** (Ctrl+S), or export it
+   with **Export** (Ctrl+E) as PNG, JPG or SVG.
 
 Press **?** in the app to see all keyboard shortcuts. A detailed user guide in Finnish is in
 [OHJE.md](OHJE.md), and the development plan in [SUUNNITELMA.md](SUUNNITELMA.md).
@@ -62,6 +64,7 @@ Press **?** in the app to see all keyboard shortcuts. A detailed user guide in F
 ```
 index.html          app shell
 css/app.css         app layout
+js/i18n.js          interface texts (Finnish and English) and language selection
 js/app.js           user interface, layers, view, export
 js/brush.js         brush, marker and eraser
 js/select.js        selection math (masks, magic wand, borders)

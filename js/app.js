@@ -9,6 +9,9 @@
   var MAX_SIDE = IS_TOUCH ? 3072 : 4096;
 
   var $ = function (id) { return document.getElementById(id); };
+  // Käyttöliittymän tekstit ovat tiedostossa js/i18n.js.
+  var t = LineoI18n.t;
+  var dec = LineoI18n.dec;
 
   var els = {
     workspace: $('workspace'),
@@ -270,7 +273,7 @@
         return;
       }
       setBusy(false);
-      if (msg.type === 'error') { toast('Reunantunnistus epäonnistui: ' + msg.message, true); return; }
+      if (msg.type === 'error') { toast(t('err.edges', { msg: msg.message }), true); return; }
       if (onResult) onResult(msg);
     }
 
@@ -306,10 +309,10 @@
 
   function updateOutputs() {
     $('detail-out').textContent = els.detail.value;
-    $('thickness-out').textContent = (+els.thickness.value).toFixed(1).replace('.', ',') + ' px';
+    $('thickness-out').textContent = dec((+els.thickness.value).toFixed(1)) + ' px';
     $('noise-out').textContent = els.noise.value;
     $('orig-opacity-out').textContent = els.origOpacity.value + ' %';
-    $('vec-width-out').textContent = (+els.vecWidth.value).toFixed(1).replace('.', ',') + ' px';
+    $('vec-width-out').textContent = dec((+els.vecWidth.value).toFixed(1)) + ' px';
     $('vec-detail-out').textContent = els.vecDetail.value;
     $('ai-tolerance-out').textContent = els.aiTolerance.value;
     $('layer-opacity-out').textContent = els.layerOpacity.value + ' %';
@@ -357,12 +360,12 @@
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(previewCanvas, 0, 0, doc.width, doc.height);
       doc.contourIsPreview = true;
-      els.statusEdges.textContent = 'esikatselu · ' + msg.ms + ' ms';
+      els.statusEdges.textContent = t('status.preview', { ms: msg.ms });
     } else {
       if (msg.width !== doc.width || msg.height !== doc.height) return;
       ctx.putImageData(img, 0, 0);
       doc.contourIsPreview = false;
-      els.statusEdges.textContent = msg.edgePixels.toLocaleString('fi-FI') + ' reunapikseliä · ' + msg.ms + ' ms';
+      els.statusEdges.textContent = t('status.edges', { n: msg.edgePixels.toLocaleString(LineoI18n.locale()), ms: msg.ms });
     }
     render();
     scheduleThumbs();
@@ -394,7 +397,14 @@
   }
 
   // Näyttää avatun dokumentin (kuva tai projekti): käyttöliittymä valmiiksi.
-  function showDocument(label, sizeText) {
+  // Tilarivin kokoteksti muistetaan avaimena, jotta se vaihtuu kielen mukana.
+  var statusSize = ['status.noImage'];
+  function setStatusSize(key, params) {
+    statusSize = [key, params];
+    els.statusSize.textContent = t(key, params);
+  }
+
+  function showDocument(label, sizeKey, sizeParams) {
     clearHistory();
     selection = null;
     els.empty.hidden = true;
@@ -404,7 +414,7 @@
     els.btnAdjust.disabled = false;
     doc.label = label;
     updateFileLabel();
-    els.statusSize.textContent = sizeText;
+    setStatusSize(sizeKey, sizeParams);
     els.statusEdges.textContent = '';
     buildLayerList();
     updateContextPanel();
@@ -415,14 +425,14 @@
   async function openFile(file) {
     if (!file) return;
     if (/\.lineo$/i.test(file.name)) { return openProjectFile(file); }
-    if (!/^image\//.test(file.type)) { toast('Tiedosto ei ole kuva: ' + file.name, true); return; }
+    if (!/^image\//.test(file.type)) { toast(t('err.notImage', { name: file.name }), true); return; }
     if (!confirmDiscard()) return;
 
     var bmp;
     try {
       bmp = await createImageBitmap(file);
     } catch (err) {
-      toast('Kuvaa ei voitu avata (' + file.name + ').', true);
+      toast(t('err.openImage', { name: file.name }), true);
       return;
     }
 
@@ -455,8 +465,8 @@
       src: scaled ? { file: file, kx: fullW / w, ky: fullH / h, fullW: fullW, fullH: fullH, ox: 0, oy: 0, bg: 'transparent', ops: [] } : null,
       layers: [
         // Alkuperäinen on aina suojattu: tekoäly ja reunantunnistus käyttävät sitä lähteenä.
-        { id: 'original', kind: 'raster', name: 'Alkuperäinen', canvas: orig, visible: true, opacity: +els.origOpacity.value / 100, locked: true },
-        { id: 'contour', kind: 'raster', name: 'Ääriviivat', canvas: makeCanvas(w, h), visible: true, opacity: 1, locked: false, edited: false }
+        { id: 'original', kind: 'raster', name: t('layer.original'), canvas: orig, visible: true, opacity: +els.origOpacity.value / 100, locked: true },
+        { id: 'contour', kind: 'raster', name: t('layer.contour'), canvas: makeCanvas(w, h), visible: true, opacity: 1, locked: false, edited: false }
       ]
     };
     baseName = file.name.replace(/\.[^.]+$/, '') || 'kuva';
@@ -467,8 +477,8 @@
     resetPaintDefaults();
     updateOutputs();
 
-    showDocument(file.name, w + ' × ' + h + ' px' + (scaled ? ' (pienennetty työskentelykokoon)' : ''));
-    if (scaled) toast('Iso kuva (' + fullW + ' × ' + fullH + ' px) pienennettiin työskentelykokoon ' + w + ' × ' + h + ' px. Alkuperäinen koko säilyy: valitse viennissä "Alkuperäinen koko".');
+    showDocument(file.name, scaled ? 'status.sizeScaled' : 'status.size', { w: w, h: h });
+    if (scaled) toast(t('toast.scaled', { fw: fullW, fh: fullH, w: w, h: h }));
 
     prepareEngine();
   }
@@ -545,7 +555,7 @@
     els.btnAdjust.disabled = true;
     els.fileName.textContent = '';
     els.fileName.classList.remove('is-dirty');
-    els.statusSize.textContent = 'Ei kuvaa';
+    setStatusSize('status.noImage');
     els.statusEdges.textContent = '';
     setBusy(false);
     buildLayerList();
@@ -627,6 +637,13 @@
 
   function isProtected(L) { return L.id === 'original' || L.id === 'contour'; }
 
+  // Suojattujen tasojen nimi näytetään valitulla kielellä (projektiin tallennettu nimi voi olla toisella kielellä).
+  function layerName(L) {
+    if (L.id === 'original') return t('layer.original');
+    if (L.id === 'contour') return t('layer.contour');
+    return L.name;
+  }
+
   // Uusi tyhjä rasteritaso aktiivisen tason päälle.
   function newRasterLayer(atTop) {
     if (!doc) return null;
@@ -635,7 +652,7 @@
     var layer = {
       id: 'r' + Date.now() + doc.rasterCount,
       kind: 'raster',
-      name: 'Taso ' + doc.rasterCount,
+      name: t('layer.n', { n: doc.rasterCount }),
       canvas: makeCanvas(doc.width, doc.height),
       visible: true,
       opacity: 1,
@@ -656,8 +673,8 @@
     settle();
     var L = activeLayer();
     if (!L) return;
-    if (isProtected(L)) { notice('Alkuperäistä ja ääriviivatasoa ei voi poistaa. Voit piilottaa ne silmäkuvakkeesta.'); return; }
-    if (L.locked) { notice('Taso on lukittu. Avaa lukitus ennen poistoa.'); return; }
+    if (isProtected(L)) { notice(t('notice.cannotDeleteProtected')); return; }
+    if (L.locked) { notice(t('notice.lockedBeforeDelete')); return; }
     var index = removeLayer(L);
     pushHistory({
       bytes: L.kind === 'raster' ? layerBytes() : 0,
@@ -693,7 +710,7 @@
   function toggleLock(L) {
     if (!L) return;
     settle();
-    if (L.id === 'original') { notice('Alkuperäinen kuva on aina suojattu. Piirrä uudelle tasolle.'); return; }
+    if (L.id === 'original') { notice(t('notice.originalAlwaysProtected')); return; }
     L.locked = !L.locked;
     if (L.locked && selection && selection.layer === L) selection = null;
     buildLayerList();
@@ -732,7 +749,7 @@
     layer.p2d = null;
     render();
     scheduleThumbs();
-    if (layer === activeVector()) els.vecCount.textContent = LineoVector.countNodes(layer.paths) + ' pistettä';
+    if (layer === activeVector()) els.vecCount.textContent = t('vec.points', { n: LineoVector.countNodes(layer.paths) });
   }
 
   function vectorPath2D(layer) {
@@ -880,7 +897,7 @@
 
   function updateZoomLabel() {
     els.btnFit.hidden = !doc;
-    if (doc) els.btnFit.textContent = 'Zoom ' + Math.round(view.scale / dpr() * 100) + ' %';
+    if (doc) els.btnFit.textContent = t('status.zoom', { pct: Math.round(view.scale / dpr() * 100) });
   }
 
   // Kuva ei pääse karkaamaan kokonaan näkyvistä.
@@ -983,7 +1000,7 @@
   function buildLayerList() {
     els.layerList.innerHTML = '';
     if (!doc) {
-      els.layerList.innerHTML = '<li class="layer-empty">Avaa kuva aloittaaksesi.</li>';
+      els.layerList.innerHTML = '<li class="layer-empty">' + t('layers.empty') + '</li>';
       return;
     }
     // Ylin taso ensin, kuten Photoshopissa.
@@ -995,7 +1012,7 @@
 
         var eye = document.createElement('button');
         eye.className = 'lineo-icon-btn';
-        eye.title = L.visible ? 'Piilota taso' : 'Näytä taso';
+        eye.title = L.visible ? t('layer.hide') : t('layer.show');
         eye.innerHTML = L.visible ? ICON_EYE : ICON_EYE_OFF;
         eye.addEventListener('click', function (e) {
           e.stopPropagation();
@@ -1011,11 +1028,11 @@
 
         var name = document.createElement('span');
         name.className = 'layer-name';
-        name.textContent = L.name;
+        name.textContent = layerName(L);
 
         var meta = document.createElement('span');
         meta.className = 'layer-meta';
-        meta.textContent = L.kind === 'vector' ? 'vektori' : Math.round(L.opacity * 100) + '%';
+        meta.textContent = L.kind === 'vector' ? t('layer.vector') : Math.round(L.opacity * 100) + '%';
         L.metaEl = meta;
 
         li.append(eye, thumb, name, meta);
@@ -1023,7 +1040,7 @@
         if (L.locked) {
           var lock = document.createElement('button');
           lock.className = 'lineo-icon-btn layer-lock';
-          lock.title = L.id === 'original' ? 'Alkuperäinen on suojattu' : 'Taso on lukittu – avaa napauttamalla';
+          lock.title = L.id === 'original' ? t('layer.originalProtected') : t('layer.lockedTap');
           lock.innerHTML = ICON_LOCK;
           lock.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -1085,7 +1102,7 @@
     els.adjustSection.hidden = !(doc && adj);
     els.pickerSection.hidden = !(doc && tool === 'picker');
     updateStyleButtons();
-    els.selInfo.textContent = sel ? sel.w + ' × ' + sel.h + ' px' : 'ei valintaa';
+    els.selInfo.textContent = sel ? sel.w + ' × ' + sel.h + ' px' : t('sel.none');
     updateCropInfo();
     els.vectorSection.hidden = !(doc && (vec || tool === 'ai'));
     els.nodeTools.hidden = !vec;
@@ -1095,7 +1112,7 @@
       els.vecWidth.value = vec.stroke.width;
       els.vecColor.value = vec.stroke.color;
       els.vecDetail.value = vec.detail;
-      els.vecCount.textContent = LineoVector.countNodes(vec.paths) + ' pistettä';
+      els.vecCount.textContent = t('vec.points', { n: LineoVector.countNodes(vec.paths) });
     } else {
       els.vecCount.textContent = '';
     }
@@ -1122,7 +1139,7 @@
     els.layerDown.disabled = !L || i <= 0;
     els.layerLock.disabled = !L;
     els.layerLock.setAttribute('aria-pressed', String(!!(L && L.locked)));
-    els.layerLock.title = L && L.locked ? 'Avaa tason lukitus' : 'Lukitse taso (ei voi piirtää, muokata eikä poistaa)';
+    els.layerLock.title = L && L.locked ? t('layer.unlock') : t('layer-lock.title');
     els.layerDelete.disabled = !L || isProtected(L);
     els.layerOpacity.disabled = !L;
     if (L) els.layerOpacity.value = Math.round(L.opacity * 100);
@@ -1198,7 +1215,7 @@
 
   // ---------- Piirtotyökalut: sivellin, tussi, pyyhekumi ----------
 
-  var PAINT_TOOLS = { brush: 'Sivellin', pen: 'Tussi', eraser: 'Pyyhekumi' };
+  var PAINT_TOOLS = { brush: 'tool.brush.name', pen: 'tool.pen.name', eraser: 'tool.eraser.name' };   // tekstiavaimet
   function isPaintTool(t) { return !!PAINT_TOOLS[t]; }
 
   // Jokaisella työkalulla omat asetukset (koko kuvapikseleinä). Väri on yhteinen.
@@ -1228,17 +1245,17 @@
     els.paintHint.hidden = fill;
     els.brushColorField.hidden = tool === 'eraser';
     if (fill) {
-      els.paintTitle.textContent = 'Väri';
+      els.paintTitle.textContent = t('brush-color.label');
       els.brushHardnessField.hidden = true;
     } else {
       var st = paint[tool];
-      els.paintTitle.textContent = PAINT_TOOLS[tool];
+      els.paintTitle.textContent = t(PAINT_TOOLS[tool]);
       els.brushSize.value = sliderFromSize(st.size);
       els.brushHardness.value = st.hardness;
       els.brushStab.value = st.stab;
       els.brushHardnessField.hidden = tool === 'pen';
     }
-    els.fillTitle.textContent = tool === 'gradient' ? 'Liukuväri' : 'Täyttö';
+    els.fillTitle.textContent = t(tool === 'gradient' ? 'tool.gradient.name' : 'tool.bucket.name');
     els.gradColor2Field.hidden = els.gradMode.value === 'transparent';
     updateOutputs();
   }
@@ -1261,20 +1278,20 @@
     var emptyContour = L.id === 'contour' && !doc.contourOn && !L.edited;   // ääriviivoja ei ole vielä luotu
     if (L.id === 'original' || L.kind !== 'raster' || emptyContour) {
       if (strict) {
-        notice(L.id === 'original' ? 'Alkuperäinen kuva on suojattu. Kopioi valinta uudelle tasolle (Ctrl+J) ja muokkaa sitä.'
-          : emptyContour ? 'Ääriviivoja ei ole vielä luotu.' : 'Tämä on vektoritaso. Valitse rasteritaso.');
+        notice(t(L.id === 'original' ? 'notice.originalProtectedEdit'
+          : emptyContour ? 'notice.noContoursYet' : 'notice.vectorLayerPickRaster'));
         return null;
       }
       var fresh = newRasterLayer(true);
-      notice('Piirrät uudelle tasolle (' + fresh.name + '), koska ' + (L.id === 'original' ? 'alkuperäinen kuva on suojattu'
-        : emptyContour ? 'ääriviivoja ei ole vielä luotu' : 'vektoritasolle ei voi maalata') + '.');
+      notice(t('notice.paintingOnNewLayer', { name: fresh.name, reason: t(L.id === 'original' ? 'reason.originalProtected'
+        : emptyContour ? 'reason.noContours' : 'reason.vectorNoPaint') }));
       return fresh;
     }
-    if (L.locked) { notice('Taso on lukittu. Avaa lukitus Tasot-osiosta.'); return null; }
-    if (!L.visible) { notice('Taso on piilotettu. Näytä se silmäkuvakkeesta ennen piirtämistä.'); return null; }
+    if (L.locked) { notice(t('notice.lockedUnlockInLayers')); return null; }
+    if (!L.visible) { notice(t('notice.hiddenShowFirst')); return null; }
     if (L.id === 'contour' && !L.edited) {
-      if (!els.busy.hidden) { notice('Ääriviivoja lasketaan vielä – odota hetki.'); return null; }
-      if (doc.contourIsPreview) { requestContours(false); notice('Ääriviivoja lasketaan vielä – odota hetki.'); return null; }
+      if (!els.busy.hidden) { notice(t('notice.contoursComputing')); return null; }
+      if (doc.contourIsPreview) { requestContours(false); notice(t('notice.contoursComputing')); return null; }
     }
     return L;
   }
@@ -1315,7 +1332,7 @@
     if (L.id !== 'contour' || L.edited) return;
     L.edited = true;
     updateContextPanel();
-    toast('Ääriviivatasoa muokataan käsin, joten automaattiset säätimet lukittiin. "Laske ääriviivat uudelleen" tai kumoa palauttaa ne.');
+    toast(t('toast.contourLocked'));
   }
 
   function clampBox(x, y, w, h) {
@@ -1655,13 +1672,13 @@
   function selectNone() { if (doc) setSelection(null); }
   function selectInvert() { if (doc) setSelection(LineoSelect.invert(sel, doc.width, doc.height)); }
   function selectGrow(dir) {
-    if (!sel) { notice('Ei valintaa.'); return; }
+    if (!sel) { notice(t('notice.noSelection')); return; }
     setSelection(LineoSelect.grow(sel, dir * +els.selGrowAmount.value, doc.width, doc.height));
   }
 
   function needSelection() {
     if (sel) return true;
-    notice('Ei valintaa. Tee ensin valinta.');
+    notice(t('notice.noSelectionMakeOne'));
     return false;
   }
 
@@ -1670,9 +1687,9 @@
     if (!doc || !needSelection()) return;
     var src = activeLayer();
     // Vektorikohteesta tehty valinta kopioi kohteen pikselit alkuperäisestä kuvasta.
-    if (src && src.kind === 'vector') { src = getLayer('original'); notice('Kopioidaan kohde alkuperäisestä kuvasta.'); }
-    if (!src || src.kind !== 'raster') { notice('Valitse rasteritaso, josta pikselit kopioidaan.'); return; }
-    if (!src.visible) { notice('Taso on piilotettu.'); return; }
+    if (src && src.kind === 'vector') { src = getLayer('original'); notice(t('notice.copyFromOriginal')); }
+    if (!src || src.kind !== 'raster') { notice(t('notice.pickRasterSource')); return; }
+    if (!src.visible) { notice(t('notice.layerHidden')); return; }
     var s = sel;
     var nc = makeCanvas(doc.width, doc.height), x = nc.getContext('2d');
     x.drawImage(src.canvas, 0, 0);
@@ -1680,13 +1697,13 @@
     x.drawImage(selMaskCanvas(s), s.x, s.y);
     if (cut && !paintTarget(true)) return;
     doc.rasterCount++;
-    var layer = { id: 'r' + Date.now() + doc.rasterCount, kind: 'raster', name: 'Taso ' + doc.rasterCount, canvas: nc, visible: true, opacity: 1, locked: false };
+    var layer = { id: 'r' + Date.now() + doc.rasterCount, kind: 'raster', name: t('layer.n', { n: doc.rasterCount }), canvas: nc, visible: true, opacity: 1, locked: false };
     var index = doc.layers.indexOf(activeLayer()) + 1;
     if (cut) deleteSelection();
     addLayer(layer, index);
     pushHistory({ bytes: layerBytes(), undo: function () { removeLayer(layer); }, redo: function () { addLayer(layer, index); } });
     scheduleThumbs();
-    notice('Valinta ' + (cut ? 'leikattiin' : 'kopioitiin') + ' uudelle tasolle (' + layer.name + ').');
+    notice(t(cut ? 'notice.selCut' : 'notice.selCopied', { name: layer.name }));
   }
 
   function deleteSelection() {
@@ -1730,7 +1747,7 @@
     if (!region) return;
     if (+els.fillGrow.value) region = LineoSelect.grow(region, +els.fillGrow.value, doc.width, doc.height);
     if (sel) region = LineoSelect.combine(sel, region, 'int');
-    if (!region) { notice('Napautettu alue on valinnan ulkopuolella.'); return; }
+    if (!region) { notice(t('notice.tapOutsideSelection')); return; }
     var color = els.brushColor.value;
     paintThroughMask(L, region, function (t, box) {
       t.fillStyle = color;
@@ -1926,10 +1943,10 @@
   function movableLayer() {
     var L = activeLayer();
     if (!L) return null;
-    if (L.id === 'original') { notice('Alkuperäinen kuva on suojattu. Kopioi valinta uudelle tasolle (Ctrl+J) ja siirrä tai muunna sitä.'); return null; }
+    if (L.id === 'original') { notice(t('notice.originalProtectedMove')); return null; }
     if (L.kind === 'vector') {
-      if (L.locked) { notice('Taso on lukittu. Avaa lukitus Tasot-osiosta.'); return null; }
-      if (!L.visible) { notice('Taso on piilotettu.'); return null; }
+      if (L.locked) { notice(t('notice.lockedUnlockInLayers')); return null; }
+      if (!L.visible) { notice(t('notice.layerHidden')); return null; }
       return L;
     }
     return paintTarget(true);
@@ -1955,7 +1972,7 @@
     g.onMove = function (pt, ev, dx, dy) {
       if (!fs) {
         fs = beginFloat(L, !!base.alt);
-        if (!fs) { notice('Ei siirrettävää: taso on tyhjä tai valinta on kuvan ulkopuolella.'); return; }
+        if (!fs) { notice(t('notice.nothingToMove')); return; }
         claimContour(L);
         fs.dx = 0; fs.dy = 0;
         fs.place = function (ctx) { ctx.translate(fs.dx, fs.dy); };
@@ -2030,11 +2047,11 @@
     var box, fs = null, orig = null;
     if (L.kind === 'vector') {
       box = vectorBounds(L);
-      if (!box) { notice('Tasolla ei ole muunnettavaa.'); return false; }
+      if (!box) { notice(t('notice.nothingToTransformLayer')); return false; }
       orig = vectorState(L);
     } else {
       fs = beginFloat(L, false);
-      if (!fs) { notice('Ei muunnettavaa: taso on tyhjä tai valinta on kuvan ulkopuolella.'); return false; }
+      if (!fs) { notice(t('notice.nothingToTransform')); return false; }
       claimContour(L);
       box = fs.box;
     }
@@ -2183,7 +2200,7 @@
   function updateCropInfo() {
     if (!crop || !doc) { els.cropInfo.textContent = ''; return; }
     var grows = crop.x0 < -0.5 || crop.y0 < -0.5 || crop.x1 > doc.width + 0.5 || crop.y1 > doc.height + 0.5;
-    els.cropInfo.textContent = Math.round(crop.x1 - crop.x0) + ' × ' + Math.round(crop.y1 - crop.y0) + ' px' + (grows ? ' · kangas kasvaa' : '');
+    els.cropInfo.textContent = Math.round(crop.x1 - crop.x0) + ' × ' + Math.round(crop.y1 - crop.y0) + ' px' + (grows ? ' · ' + t('crop.grows') : '');
   }
 
   // Rajaus saa ulottua kuvan ulkopuolelle: yhden kuvan verran kummallekin puolelle.
@@ -2305,7 +2322,7 @@
     doc.contourIsPreview = false;
     prepareEngine();
     if (!getLayer('contour').edited) requestContours(false);
-    els.statusSize.textContent = doc.width + ' × ' + doc.height + ' px';
+    setStatusSize('status.size', { w: doc.width, h: doc.height });
     buildLayerList();
     updateContextPanel();
     fitView();
@@ -2322,7 +2339,7 @@
   function reframe(x, y, w, h, bg) {
     if (w < 1 || h < 1) return false;
     if (w > MAX_CANVAS_SIDE || h > MAX_CANVAS_SIDE || w * h > MAX_PIXELS) {
-      notice('Kangas on liian suuri. Enintään ' + Math.round(MAX_PIXELS / 1e6) + ' megapikseliä (nyt ' + (w * h / 1e6).toFixed(1).replace('.', ',') + ').');
+      notice(t('notice.canvasTooLarge', { max: Math.round(MAX_PIXELS / 1e6), now: dec((w * h / 1e6).toFixed(1)) }));
       return false;
     }
     settle();
@@ -2360,7 +2377,7 @@
     if (!doc || !crop) return;
     var x = Math.round(crop.x0), y = Math.round(crop.y0);
     var w = Math.round(crop.x1) - x, h = Math.round(crop.y1) - y;
-    if (w < 4 || h < 4) { notice('Rajattava alue on liian pieni.'); return; }
+    if (w < 4 || h < 4) { notice(t('notice.cropTooSmall')); return; }
     if (x === 0 && y === 0 && w === doc.width && h === doc.height) { leaveModal(); return; }
     if (reframe(x, y, w, h, els.cropBg.value)) leaveModal();
   }
@@ -2397,7 +2414,7 @@
     if (!doc) return;
     settle();
     if (tool === 'crop') leaveModal();
-    els.canvasCurrent.textContent = 'Nykyinen koko: ' + doc.width + ' × ' + doc.height + ' px';
+    els.canvasCurrent.textContent = t('canvas.current', { w: doc.width, h: doc.height });
     els.canvasW.value = doc.width;
     els.canvasH.value = doc.height;
     els.canvasLink.value = 'free';
@@ -2417,12 +2434,12 @@
   function applyCanvasDialog() {
     if (!doc) return;
     var w = Math.round(+els.canvasW.value), h = Math.round(+els.canvasH.value);
-    if (!(w >= 1) || !(h >= 1)) { notice('Anna leveys ja korkeus pikseleinä.'); return; }
+    if (!(w >= 1) || !(h >= 1)) { notice(t('notice.enterSize')); return; }
     if (w === doc.width && h === doc.height) { closeCanvasDialog(); return; }
     var ox = Math.round((w - doc.width) * canvasAnchor.x), oy = Math.round((h - doc.height) * canvasAnchor.y);
     if (reframe(-ox, -oy, w, h, els.canvasBg.value)) {
       closeCanvasDialog();
-      notice('Kangas on nyt ' + w + ' × ' + h + ' px.');
+      notice(t('notice.canvasNow', { w: w, h: h }));
     }
   }
 
@@ -2452,7 +2469,7 @@
     } else {
       box = L.kind === 'raster' ? contentBox(L) : contentBox({ canvas: src });
     }
-    if (!box) { notice(sel ? 'Valinta on kuvan ulkopuolella.' : 'Taso on tyhjä, ei kopioitavaa.'); return false; }
+    if (!box) { notice(t(sel ? 'notice.selOutside' : 'notice.layerEmptyNoCopy')); return false; }
     var c = makeCanvas(box.w, box.h), x = c.getContext('2d');
     x.drawImage(src, -box.x, -box.y);
     if (sel) {
@@ -2475,14 +2492,14 @@
   }
 
   function copySelection() {
-    if (copyToClip()) notice(sel ? 'Valinta kopioitu.' : 'Taso kopioitu.');
+    if (copyToClip()) notice(t(sel ? 'notice.selCopiedClip' : 'notice.layerCopiedClip'));
   }
 
   function cutSelection() {
     if (!doc) return;
     if (!copyToClip()) return;
     var L = activeLayer();
-    if (L.kind !== 'raster') { notice('Vektoritasoa ei voi leikata, mutta se kopioitiin.'); return; }
+    if (L.kind !== 'raster') { notice(t('notice.vectorNoCut')); return; }
     if (sel) { deleteSelection(); return; }
     var target = paintTarget(true);
     if (!target) return;
@@ -2495,23 +2512,23 @@
   }
 
   // Lisää kuvan uudeksi tasoksi aktiivisen tason päälle (kuva sijoitetaan kohtaan x, y).
-  function pasteCanvasAsLayer(source, x, y, text) {
+  function pasteCanvasAsLayer(source, x, y, textKey) {
     settle();
     var nc = makeCanvas(doc.width, doc.height);
     nc.getContext('2d').drawImage(source, x, y);
     doc.rasterCount++;
-    var layer = { id: 'r' + Date.now() + doc.rasterCount, kind: 'raster', name: 'Taso ' + doc.rasterCount, canvas: nc, visible: true, opacity: 1, locked: false };
+    var layer = { id: 'r' + Date.now() + doc.rasterCount, kind: 'raster', name: t('layer.n', { n: doc.rasterCount }), canvas: nc, visible: true, opacity: 1, locked: false };
     var index = doc.layers.indexOf(activeLayer()) + 1;
     addLayer(layer, index);
     pushHistory({ bytes: layerBytes(), undo: function () { removeLayer(layer); }, redo: function () { addLayer(layer, index); } });
     scheduleThumbs();
-    notice(text + ' (' + layer.name + ').');
+    notice(t(textKey, { name: layer.name }));
   }
 
   function pasteInternal() {
     if (!doc) return;
-    if (!clip) { notice('Ei liitettävää. Kopioi ensin jotain (Ctrl+C).'); return; }
-    pasteCanvasAsLayer(clip.canvas, clip.x, clip.y, 'Liitetty samaan kohtaan');
+    if (!clip) { notice(t('notice.nothingToPaste')); return; }
+    pasteCanvasAsLayer(clip.canvas, clip.x, clip.y, 'notice.pastedInPlace');
   }
 
   // Muualta tullut kuva: uudelle tasolle keskelle, tarvittaessa kankaaseen sopivaksi pienennettynä.
@@ -2522,7 +2539,7 @@
     x.imageSmoothingQuality = 'high';
     x.drawImage(bitmap, 0, 0, c.width, c.height);
     pasteCanvasAsLayer(c, Math.round((doc.width - c.width) / 2), Math.round((doc.height - c.height) / 2),
-      s < 1 ? 'Kuva pienennettiin kankaaseen sopivaksi ja liitettiin keskelle' : 'Kuva liitettiin keskelle');
+      s < 1 ? 'notice.pastedScaled' : 'notice.pastedCenter');
   }
 
   // Vertaa kahta kuvaa pienennettyinä: onko leikepöydän kuva ohjelman oma kopio?
@@ -2768,7 +2785,7 @@
   function applyVectorStyle(name, all) {
     if (!doc) return;
     var targets = all ? doc.layers.filter(function (L) { return L.kind === 'vector' && !L.locked; }) : [activeVector()].filter(function (L) { return L && !L.locked; });
-    if (!targets.length) { notice(all ? 'Ei muokattavia vektorikohteita.' : 'Valitse (lukitsematon) vektorikohde.'); return; }
+    if (!targets.length) { notice(t(all ? 'notice.noVectorObjects' : 'notice.pickVectorObject')); return; }
     var sp = styleSpec(name), changes = targets.map(function (L) {
       var before = vectorStyleState(L);
       setVectorStyleState(L, { stroke: { width: sp.width, color: sp.color, pencil: !!sp.pencil }, name: name });
@@ -2823,7 +2840,7 @@
       if (!palette.length) {
         var empty = document.createElement('span');
         empty.className = 'palette-empty';
-        empty.textContent = 'Paletti on tyhjä. Lisää nykyinen väri +-napilla.';
+        empty.textContent = t('palette.empty');
         el.appendChild(empty);
       }
       palette.forEach(function (hex) {
@@ -2917,7 +2934,7 @@
   // lasketaan uudelleen ja tekoälyn analyysi tehdään uudestaan. Esikatselu lasketaan kevennetystä kopiosta.
 
   var adj = null;   // { op, layer, scale, sw, sh, baseCanvas, baseData, preview, params, hist, dirty }
-  var ADJ_TITLES = { bc: 'Kirkkaus / kontrasti', hs: 'Sävy / kylläisyys', levels: 'Levels', curves: 'Käyrät', blur: 'Sumennus', sharpen: 'Terävöinti' };
+  var ADJ_TITLES = { bc: 'adj.bc', hs: 'adj.hs', levels: 'adj.levels', curves: 'adj.curves', blur: 'adj.blur', sharpen: 'adj.sharpen' };   // tekstiavaimet
   var ADJ_PREVIEW_SIDE = 1000;
   var CHANNELS = ['rgb', 'r', 'g', 'b'];
 
@@ -2977,9 +2994,9 @@
   function adjustTarget() {
     var L = activeLayer();
     if (!L) return null;
-    if (L.kind !== 'raster') { notice('Säädöt toimivat pikselitasoilla. Vektorikohteen värin ja paksuuden säädät Vektoriviiva-osiosta.'); return null; }
+    if (L.kind !== 'raster') { notice(t('notice.adjustRasterOnly')); return null; }
     if (L.id === 'original') {
-      if (!L.visible) { notice('Taso on piilotettu.'); return null; }
+      if (!L.visible) { notice(t('notice.layerHidden')); return null; }
       return L;
     }
     return paintTarget(true);
@@ -2999,7 +3016,7 @@
   function applyFull(op, params, L) {
     var W = L.canvas.width, H = L.canvas.height;
     var box = sel ? clampBox(sel.x, sel.y, sel.w, sel.h) : { x: 0, y: 0, w: W, h: H };
-    if (!box) { notice('Valinta on kuvan ulkopuolella.'); return; }
+    if (!box) { notice(t('notice.selOutside')); return; }
     var pad = op === 'blur' || op === 'sharpen' ? Math.ceil(params.radius * 3) + 2 : 0;
     var pb = clampBox(box.x - pad, box.y - pad, box.w + pad * 2, box.h + pad * 2);
     var isOrig = L.id === 'original', s = sel;
@@ -3060,7 +3077,7 @@
     var data = bx.getImageData(0, 0, sw, sh);
     adj = { op: op, layer: L, scale: sw / W, sw: sw, sh: sh, baseCanvas: base, baseData: data, preview: makeCanvas(sw, sh),
       params: defaultParams(op), hist: LineoFilters.histogram(data.data), dirty: false };
-    els.adjustTitle.textContent = ADJ_TITLES[op];
+    els.adjustTitle.textContent = t(ADJ_TITLES[op]);
     Array.prototype.forEach.call(els.adjustSection.querySelectorAll('.adj-block'), function (b) { b.hidden = b.id !== 'adj-' + op; });
     syncAdjustUI();
     updateContextPanel();
@@ -3120,7 +3137,7 @@
   };
   var LV_SLIDERS = [['lv-inblack', 'ib'], ['lv-gamma', 'g'], ['lv-inwhite', 'iw'], ['lv-outblack', 'ob'], ['lv-outwhite', 'ow']];
 
-  function fmtNum(v) { return String(v).replace('.', ','); }
+  function fmtNum(v) { return dec(v); }
 
   function syncAdjustUI() {
     if (!adj) return;
@@ -3137,7 +3154,7 @@
       LV_SLIDERS.forEach(function (s) {
         var input = $(s[0]), v = s[1] === 'g' ? Math.round(l.g * 100) : l[s[1]];
         input.value = v;
-        $(s[0] + '-out').textContent = s[1] === 'g' ? (v / 100).toFixed(2).replace('.', ',') : v;
+        $(s[0] + '-out').textContent = s[1] === 'g' ? dec((v / 100).toFixed(2)) : v;
         updateRangeFill(input);
       });
     }
@@ -3264,12 +3281,12 @@
   function markClean() { if (doc) { doc.dirty = false; updateFileLabel(); } }
 
   function confirmDiscard() {
-    return !doc || !doc.dirty || window.confirm('Tallentamattomat muutokset menetetään. Jatketaanko?');
+    return !doc || !doc.dirty || window.confirm(t('confirm.discard'));
   }
 
   function canvasBlob(c, type, quality) {
     return new Promise(function (resolve, reject) {
-      c.toBlob(function (b) { if (b) resolve(b); else reject(new Error('Kuvan muunnos tiedostoksi epäonnistui (liian suuri?)')); }, type, quality);
+      c.toBlob(function (b) { if (b) resolve(b); else reject(new Error(t('err.blob'))); }, type, quality);
     });
   }
 
@@ -3344,12 +3361,12 @@
         doc.label = handle.name;
         baseName = handle.name.replace(/\.[^.]+$/, '') || baseName;
         markClean();
-        toast('Tallennettu: ' + handle.name);
+        toast(t('toast.saved', { name: handle.name }));
         return;
       }
       downloadBlob(blob, name);
       markClean();
-      toast('Projekti ladattiin: ' + name + '. Avaa se myöhemmin Tiedosto-valikon Avaa-toiminnolla.');
+      toast(t('toast.projectDownloadedLater', { name: name }));
     } catch (err) {
       if (err && err.name === 'AbortError') return;
       console.warn('Tallennus epäonnistui', err);
@@ -3357,9 +3374,9 @@
         // Suora tallennus ei onnistunut (esim. lupa): ladataan tiedosto tavallisesti.
         downloadBlob(blob, name);
         markClean();
-        toast('Projekti ladattiin: ' + name);
+        toast(t('toast.projectDownloaded', { name: name }));
       } else {
-        toast('Tallennus epäonnistui: ' + (err && err.message || err), true);
+        toast(t('err.save', { msg: err && err.message || err }), true);
       }
     }
   }
@@ -3368,7 +3385,7 @@
     if (!confirmDiscard()) return;
     var pk;
     try { pk = LineoFiles.unpackProject(await file.arrayBuffer()); }
-    catch (err) { toast('Projektia ei voitu avata: ' + err.message, true); return; }
+    catch (err) { toast(t('err.openProject', { msg: err.message }), true); return; }
     var h = pk.header;
     var layers = [];
     try {
@@ -3389,7 +3406,7 @@
         layers.push(L);
       }
       if (!layers.some(function (l) { return l.id === 'original'; }) || !layers.some(function (l) { return l.id === 'contour'; })) {
-        throw new Error('tasot puuttuvat');
+        throw new Error(t('err.layersMissing'));
       }
       var src = null;
       if (h.src && pk.has('source')) {
@@ -3410,7 +3427,7 @@
       }
     } catch (err) {
       console.warn(err);
-      toast('Projektitiedosto on vioittunut: ' + (err && err.message || err), true);
+      toast(t('err.projectCorrupt', { msg: err && err.message || err }), true);
       return;
     }
 
@@ -3441,10 +3458,10 @@
       savePalette();
       renderPalettes();
     }
-    showDocument(file.name, doc.width + ' × ' + doc.height + ' px' + (src ? ' (alkuperäinen ' + src.fullW + ' × ' + src.fullH + ' px tallessa)' : ''));
+    showDocument(file.name, src ? 'status.sizeProject' : 'status.size', { w: doc.width, h: doc.height, fw: src && src.fullW, fh: src && src.fullH });
     prepareEngine();
     previewCanvas = null;
-    toast('Projekti avattu: ' + file.name);
+    toast(t('toast.projectOpened', { name: file.name }));
   }
 
   // ---------- Vienti ----------
@@ -3542,7 +3559,7 @@
   // o: { content: both | lines | cutout, size, bg ('transparent' | '#rrggbb'), cutSource, cutCrop, cutLines, format }
   async function renderExportCanvas(o) {
     var ex = exportDims(o.size);
-    if (ex.ow * ex.oh > MAX_EXPORT_PIXELS) throw new Error('Kuva olisi liian suuri (' + (ex.ow * ex.oh / 1e6).toFixed(0) + ' megapikseliä). Valitse pienempi koko.');
+    if (ex.ow * ex.oh > MAX_EXPORT_PIXELS) throw new Error(t('err.exportTooLarge', { mp: (ex.ow * ex.oh / 1e6).toFixed(0) }));
     var out = makeCanvas(ex.ow, ex.oh), x = out.getContext('2d');
     var needOrig = o.content === 'both' || o.content === 'cutout';
     var contour = getLayer('contour');
@@ -3560,11 +3577,11 @@
     if (o.content === 'cutout') {
       var cutLayers = exportCutLayers(o), M = makeCanvas(ex.ow, ex.oh), mx = M.getContext('2d'), bbox;
       if (o.cutSource === 'selection') {
-        if (!sel) throw new Error('Ei valintaa. Tee valinta tai valitse kohteeksi vektorikohde.');
+        if (!sel) throw new Error(t('err.noSelectionCut'));
         mx.drawImage(selMaskCanvas(sel), sel.x * ex.sx, sel.y * ex.sy, sel.w * ex.sx, sel.h * ex.sy);
         bbox = { x: sel.x * ex.sx, y: sel.y * ex.sy, w: sel.w * ex.sx, h: sel.h * ex.sy };
       } else {
-        if (!cutLayers.length) throw new Error('Kohdetta ei löytynyt.');
+        if (!cutLayers.length) throw new Error(t('err.objectNotFound'));
         fillPathsCanvas(mx, cutLayers, ex.sx, ex.sy);
         var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         cutLayers.forEach(function (L) {
@@ -3584,7 +3601,7 @@
       if (o.cutCrop) {
         var bx = Math.max(0, Math.floor(bbox.x)), by = Math.max(0, Math.floor(bbox.y));
         var bw = Math.min(ex.ow, Math.ceil(bbox.x + bbox.w)) - bx, bh = Math.min(ex.oh, Math.ceil(bbox.y + bbox.h)) - by;
-        if (bw < 1 || bh < 1) throw new Error('Kohde on kuvan ulkopuolella.');
+        if (bw < 1 || bh < 1) throw new Error(t('err.objectOutside'));
         var C = makeCanvas(bw, bh);
         C.getContext('2d').drawImage(out, -bx, -by);
         out = C;
@@ -3634,7 +3651,7 @@
     var ex = exportDims(o.size);
     var layers = doc.layers.filter(function (L) { return L.kind === 'vector' && L.visible && L.opacity > 0; })
       .map(function (L) { return { paths: L.paths, stroke: L.stroke, opacity: L.opacity }; });
-    if (!layers.length) throw new Error('Ei vektoriääriviivoja. SVG sisältää vain tekoälyllä tai käsin tehdyt vektorikohteet (ei automaattisia ääriviivoja).');
+    if (!layers.length) throw new Error(t('err.noVectors'));
     return new Blob([LineoFiles.buildSvg({ width: doc.width, height: doc.height, outWidth: ex.ow, outHeight: ex.oh, bg: o.bg, layers: layers })], { type: 'image/svg+xml' });
   }
 
@@ -3675,12 +3692,12 @@
     $('ex-quality-out').textContent = els.exQuality.value;
     updateRangeFill(els.exQuality);
     var ex = exportDims(els.exSize.value), notes = [];
-    notes.push('Tulos: ' + (content === 'cutout' ? 'enintään ' : '') + ex.ow + ' × ' + ex.oh + ' px (' + (ex.ow * ex.oh / 1e6).toFixed(1).replace('.', ',') + ' Mpx).');
-    if (ex.ow * ex.oh > MAX_EXPORT_PIXELS) notes.push('Liian suuri: valitse pienempi koko.');
-    if (f === 'svg') notes.push('SVG sisältää vain vektoriääriviivat (tekoälyrajaukset ja käsin muokatut kohteet), ei automaattisia ääriviivoja.');
-    if (f === 'jpg' && (content === 'cutout' || content === 'lines') && els.exBg.value === 'transparent') notes.push('JPG ei tue läpinäkyvyyttä: tausta on valkoinen.');
-    if (f !== 'svg' && ex.useOrig && content !== 'cutout' && !getLayer('contour').edited) notes.push('Ääriviivat lasketaan täydessä koossa, mikä voi kestää hetken.');
-    if (f !== 'svg' && ex.useOrig && getLayer('contour').edited) notes.push('Käsin muokattu ääriviivataso skaalataan alkuperäiseen kokoon (ei lasketa uudelleen).');
+    notes.push(t(content === 'cutout' ? 'ex.resultMax' : 'ex.result', { w: ex.ow, h: ex.oh, mp: dec((ex.ow * ex.oh / 1e6).toFixed(1)) }));
+    if (ex.ow * ex.oh > MAX_EXPORT_PIXELS) notes.push(t('ex.tooLarge'));
+    if (f === 'svg') notes.push(t('ex.svgNote'));
+    if (f === 'jpg' && (content === 'cutout' || content === 'lines') && els.exBg.value === 'transparent') notes.push(t('ex.jpgNoAlpha'));
+    if (f !== 'svg' && ex.useOrig && content !== 'cutout' && !getLayer('contour').edited) notes.push(t('ex.fullSizeContours'));
+    if (f !== 'svg' && ex.useOrig && getLayer('contour').edited) notes.push(t('ex.editedScaled'));
     els.exInfo.textContent = notes.join(' ');
   }
 
@@ -3692,16 +3709,16 @@
     // Koko
     els.exSize.innerHTML = '';
     function addOpt(sel, value, text) { var o = document.createElement('option'); o.value = value; o.textContent = text; sel.appendChild(o); }
-    if (doc.src) addOpt(els.exSize, 'orig', 'Alkuperäinen koko (' + Math.round(doc.width * doc.src.kx) + ' × ' + Math.round(doc.height * doc.src.ky) + ' px)');
-    addOpt(els.exSize, 'work', 'Työkoko (' + doc.width + ' × ' + doc.height + ' px)');
-    addOpt(els.exSize, 'half', 'Puolet (' + Math.round(doc.width / 2) + ' × ' + Math.round(doc.height / 2) + ' px)');
+    if (doc.src) addOpt(els.exSize, 'orig', t('ex.sizeOrig', { w: Math.round(doc.width * doc.src.kx), h: Math.round(doc.height * doc.src.ky) }));
+    addOpt(els.exSize, 'work', t('ex.sizeWork', { w: doc.width, h: doc.height }));
+    addOpt(els.exSize, 'half', t('ex.sizeHalf', { w: Math.round(doc.width / 2), h: Math.round(doc.height / 2) }));
     // Kohde
     els.exCutSource.innerHTML = '';
-    if (sel) addOpt(els.exCutSource, 'selection', 'Nykyinen valinta');
+    if (sel) addOpt(els.exCutSource, 'selection', t('ex.currentSelection'));
     var vecs = doc.layers.filter(function (L) { return L.kind === 'vector'; });
     vecs.slice().reverse().forEach(function (L) { addOpt(els.exCutSource, L.id, L.name); });
-    if (vecs.length > 1) addOpt(els.exCutSource, 'vectors', 'Kaikki näkyvät kohteet yhdessä');
-    if (!els.exCutSource.options.length) addOpt(els.exCutSource, 'selection', 'Ei kohteita: tee valinta tai tekoälyrajaus');
+    if (vecs.length > 1) addOpt(els.exCutSource, 'vectors', t('ex.allVisible'));
+    if (!els.exCutSource.options.length) addOpt(els.exCutSource, 'selection', t('ex.noObjects'));
     var activeVec = activeVector();
     if (activeVec) els.exCutSource.value = activeVec.id;
     // Tallennetut valinnat
@@ -3728,7 +3745,7 @@
     var o = readExportUI();
     saveExportSettings(o);
     els.exDownload.disabled = true;
-    notice('Viedään kuvaa…');
+    notice(t('notice.exporting'));
     try {
       await waitContourReady();
       var blob;
@@ -3739,11 +3756,11 @@
       }
       var name = exportFileName(o);
       downloadBlob(blob, name);
-      toast('Ladattu: ' + name);
+      toast(t('toast.downloaded', { name: name }));
       closeExportDialog();
     } catch (err) {
       console.warn('Vienti epäonnistui', err);
-      toast('Vienti epäonnistui: ' + (err && err.message || err), true);
+      toast(t('err.export', { msg: err && err.message || err }), true);
     } finally {
       els.exDownload.disabled = false;
     }
@@ -3755,7 +3772,7 @@
     var b = vectorBounds(L);
     if (!b) return;
     var box = clampBox(b.x - 1, b.y - 1, b.w + 2, b.h + 2);
-    if (!box) { notice('Kohde on kuvan ulkopuolella.'); return; }
+    if (!box) { notice(t('notice.objectOutside')); return; }
     var c = makeCanvas(box.w, box.h), x = c.getContext('2d', { willReadFrequently: true });
     x.translate(-box.x, -box.y);
     x.fillStyle = '#000';
@@ -3763,29 +3780,29 @@
     var d = x.getImageData(0, 0, box.w, box.h).data, a = new Uint8Array(box.w * box.h);
     for (var i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
     setSelection(LineoSelect.combine(sel, LineoSelect.fromAlpha(a, box.x, box.y, box.w, box.h), mode));
-    notice('Valinta tehty kohteesta ' + L.name + '. Ctrl+J kopioi sen uudelle tasolle.');
+    notice(t('notice.selFromObject', { name: L.name }));
   }
 
   // ---------- Paletin vienti ja tuonti, pikanäppäimet ----------
 
   function exportPalette() {
     downloadBlob(new Blob([JSON.stringify({ app: 'Lineo', type: 'palette', colors: palette }, null, 2)], { type: 'application/json' }), 'lineo-paletti.json');
-    toast('Paletti ladattu.');
+    toast(t('toast.paletteSaved'));
   }
 
   async function importPalette(file) {
     try {
       var data = JSON.parse(await file.text());
       var colors = (Array.isArray(data) ? data : data && data.colors || []).map(function (c) { return String(c).toLowerCase(); }).filter(isHex);
-      if (!colors.length) throw new Error('väripaletti puuttuu');
+      if (!colors.length) throw new Error(t('err.paletteMissing'));
       var added = 0;
       colors.forEach(function (c) { if (palette.indexOf(c) === -1) { palette.push(c); added++; } });
       palette = palette.slice(0, 48);
       savePalette();
       renderPalettes();
-      toast('Paletti tuotu: ' + added + ' uutta väriä.');
+      toast(t('toast.paletteImported', { n: added }));
     } catch (err) {
-      toast('Palettia ei voitu tuoda: ' + (err && err.message || err), true);
+      toast(t('err.paletteImport', { msg: err && err.message || err }), true);
     }
   }
 
@@ -3819,7 +3836,7 @@
     } else {
       doc.vectorCount++;
       L = {
-        id: 'v' + Date.now() + doc.vectorCount, kind: 'vector', name: 'Viiva ' + doc.vectorCount, visible: true, opacity: 1, locked: false,
+        id: 'v' + Date.now() + doc.vectorCount, kind: 'vector', name: t('layer.line', { n: doc.vectorCount }), visible: true, opacity: 1, locked: false,
         paths: [path], loops: null, detail: 50, styleName: null,
         stroke: { width: +els.vecWidth.value, color: els.vecColor.value }
       };
@@ -4022,7 +4039,7 @@
     var d = toDoc(p);
     if (!inDoc(d)) return Object.assign(base, { type: 'pan' });
     var av = activeVector();
-    if (e.shiftKey && av && av.locked) { notice('Taso on lukittu. Avaa lukitus Tasot-osiosta.'); return Object.assign(base, { type: 'pan' }); }
+    if (e.shiftKey && av && av.locked) { notice(t('notice.lockedUnlockInLayers')); return Object.assign(base, { type: 'pan' }); }
     var rs = penResume;
     penResume = null;
     if (rs && rs.branch != null && !e.shiftKey && doc.layers.indexOf(rs.layer) >= 0 && doc.activeId === rs.layer.id && !rs.layer.locked &&
@@ -4089,7 +4106,7 @@
     if (!doc || aiMethod() === 'color') return;
     var src = aiSource();
     if (LineoSam.isEncoded(src.key)) return;
-    aiStatus(LineoSam.isLoaded ? 'Analysoidaan kuvaa…' : 'Ladataan tekoälymallia…', LineoSam.isLoaded ? -1 : 0);
+    aiStatus(t(LineoSam.isLoaded ? 'ai.analyzing' : 'ai.loading'), LineoSam.isLoaded ? -1 : 0);
     LineoSam.setImage(src.data, src.key).then(function () {
       aiStatus(null);
     }, aiFailed);
@@ -4104,8 +4121,8 @@
     updateContextPanel();
     var why = String(err && err.message || err || '').slice(0, 160);
     var errBox = $('ai-error');
-    if (errBox) { errBox.textContent = 'Tekoäly ei latautunut: ' + (why || 'tuntematon virhe') + '. Tarkista verkkoyhteys ja että selain sallii jsdelivr.net- ja huggingface.co -osoitteet. Valitse Menetelmä-valikosta tekoäly uudelleen yrittääksesi.'; errBox.hidden = false; }
-    toast('Tekoälymallia ei saatu käyttöön' + (why ? ' (' + why + ')' : '') + '. Käytetään värialueen rajausta. Tekoäly tarvitsee verkkoyhteyden ensimmäisellä käyttökerralla; voit vaihtaa menetelmän takaisin tekoälyyn Menetelmä-valikosta.', true);
+    if (errBox) { errBox.textContent = t('ai.errorBox', { why: why || t('ai.unknownError') }); errBox.hidden = false; }
+    toast(t('ai.fallbackToast', { why: why ? ' (' + why + ')' : '' }), true);
     if (ai.points.length) aiRun();
   }
 
@@ -4120,10 +4137,10 @@
     var loaded = 0, total = 0;
     Object.keys(dlFiles).forEach(function (k) { loaded += dlFiles[k].loaded; total += dlFiles[k].total; });
     if (total > 0 && loaded < total) {
-      var mb = function (v) { return (v / 1048576).toFixed(1).replace('.', ','); };
-      aiStatus('Ladataan tekoälymallia… ' + Math.floor(loaded / total * 100) + ' % (' + mb(loaded) + ' / ' + mb(total) + ' Mt)', loaded / total);
+      var mb = function (v) { return dec((v / 1048576).toFixed(1)); };
+      aiStatus(t('ai.loadingProgress', { pct: Math.floor(loaded / total * 100), loaded: mb(loaded), total: mb(total) }), loaded / total);
     } else if (total > 0) {
-      aiStatus('Analysoidaan kuvaa…', -1);
+      aiStatus(t('ai.analyzing'), -1);
     }
   };
 
@@ -4164,7 +4181,7 @@
         setTimeout(function () { resolve(colorRegions(src, points)); }, 0);
       });
     } else {
-      if (!LineoSam.isEncoded(src.key)) aiStatus(LineoSam.isLoaded ? 'Analysoidaan kuvaa…' : 'Ladataan tekoälymallia…', LineoSam.isLoaded ? -1 : 0);
+      if (!LineoSam.isEncoded(src.key)) aiStatus(t(LineoSam.isLoaded ? 'ai.analyzing' : 'ai.loading'), LineoSam.isLoaded ? -1 : 0);
       job = LineoSam.setImage(src.data, src.key).then(function () {
         aiStatus(null);
         return samRegions(points, src.key);
@@ -4337,7 +4354,7 @@
     var layer = {
       id: 'v' + Date.now() + doc.vectorCount,
       kind: 'vector',
-      name: 'Kohde ' + doc.vectorCount,
+      name: t('layer.object', { n: doc.vectorCount }),
       visible: true,
       opacity: 1,
       paths: ai.paths,
@@ -4352,7 +4369,7 @@
       redo: function () { addLayer(layer); }
     });
     scheduleThumbs();
-    toast(layer.name + ' lisättiin omalle tasolleen. Kynällä (P) voit viimeistellä sen.');
+    toast(t('toast.objectAdded', { name: layer.name }));
   }
 
   function aiCancel() {
@@ -4723,7 +4740,7 @@
   els.vecStyleAll.addEventListener('click', function () {
     var name = null;
     Array.prototype.forEach.call(els.vectorStyles.children, function (b) { if (b.getAttribute('aria-pressed') === 'true') name = b.getAttribute('data-style'); });
-    if (!name) { notice('Valitse ensin tyyli (Ohut tussi, Paksu sarjakuva tai Lyijykynä).'); return; }
+    if (!name) { notice(t('notice.pickStyleFirst')); return; }
     applyVectorStyle(name, true);
   });
   Array.prototype.forEach.call(document.querySelectorAll('.palette-box'), function (box) {
@@ -4868,7 +4885,7 @@
     for (var i = 0; i < files.length; i++) {
       if (/^image\//.test(files[i].type) || /\.lineo$/i.test(files[i].name)) { openFile(files[i]); return; }
     }
-    toast('Pudotettu tiedosto ei ole kuva eikä Lineo-projekti.', true);
+    toast(t('toast.droppedNotImage'), true);
   });
 
   // Liitä leikepöydältä (Ctrl+V): muualta tullut kuva tai ohjelman oma kopio, kumpi on uudempi.
@@ -5042,7 +5059,7 @@
     } else if (tool === 'edit') {
       var hit = hitTest(p);
       if (hit && hit.layer.locked && hit.layer === activeVector()) {
-        notice('Taso on lukittu. Avaa lukitus Tasot-osiosta, jos haluat muokata sitä.');
+        notice(t('notice.lockedUnlockToEdit'));
         gesture = Object.assign(base, { type: 'pan' });
       } else if (hit && hit.type === 'segment' && hit.layer !== activeVector()) {
         // Klikkaus toisen tason viivaan valitsee sen tason; jos kohdassa on avoimen viivan pää, viivaa voi jatkaa siitä.
@@ -5173,7 +5190,7 @@
         // Käsityökalulla napautus viivaan tai piirrokseen valitsee sen tason, jolloin sen asetuksia (esim. viivan paksuutta) voi muokata.
         if (g.tapZoom && g.button !== 2) {
           var picked = layerAtPoint(p);
-          if (picked && picked.id !== doc.activeId) { setActive(picked.id); notice('Valittu: ' + picked.name); }
+          if (picked && picked.id !== doc.activeId) { setActive(picked.id); notice(t('notice.picked', { name: layerName(picked) })); }
         }
       }
     }
@@ -5270,6 +5287,19 @@
 
   new ResizeObserver(resizeCanvas).observe(els.workspace);
 
+  // Kielen vaihto: i18n.js päivittää sivun kiinteät tekstit, tässä ohjelman itse asettamat.
+  LineoI18n.onChange(function () {
+    setStatusSize(statusSize[0], statusSize[1]);
+    updateZoomLabel();
+    buildLayerList();
+    if (doc) scheduleThumbs();
+    if (isPaintTool(tool) || isFillTool(tool)) loadPaintUI();
+    if (adj) els.adjustTitle.textContent = t(ADJ_TITLES[adj.op]);
+    renderPalettes();
+    updateContextPanel();
+  });
+
+  setStatusSize('status.noImage');
   updateOutputs();
   buildLayerList();
   updateLayerActions();

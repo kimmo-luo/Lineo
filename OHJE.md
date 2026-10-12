@@ -4,6 +4,10 @@ Selaimessa toimiva ilmainen kuvankäsittely- ja piirto-ohjelma maalausten ääri
 
 Kaikki tapahtuu omassa selaimessa: kuvia ei lähetetä minnekään.
 
+Käyttöliittymä on suomeksi ja englanniksi. Kieli vaihdetaan yläpalkin **FI / EN** -napeista.
+Oletuksena on selaimen kieli (suomi, muuten englanti), ja valinta muistetaan selaimessa.
+Tämä käyttöohje on suomeksi.
+
 ## Käynnistys
 
 **Nopeimmin:** avaa `index.html` selaimessa (tuplaklikkaus). Ei asennuksia, ei build-vaihetta.
@@ -265,6 +269,7 @@ saa automaattisesti korostusvärin.
 ```
 index.html          sovelluksen runko
 css/app.css         Lineon asettelu
+js/i18n.js          käyttöliittymän tekstit (suomi ja englanti) ja kielivalinta
 js/app.js           käyttöliittymä, tasot, näkymä, vienti
 js/brush.js         sivellin, tussi ja pyyhekumi (leimaus, stabilointi, pehmeä kärki)
 js/select.js        valintojen laskenta (maskit, yhdistäminen, taikasauvan alue, reuna)
