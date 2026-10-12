@@ -87,7 +87,7 @@ var LineoSam = (function () {
     if (worker) return worker;
     // Dynaaminen import: epäonnistuessaan se kertoo todellisen syyn (staattinen import antaa vain "Script error").
     var src = 'import(' + JSON.stringify(TRANSFORMERS_URL) + ').then(function (T) {\n(' + workerMain.toString() + ')(self, T);\n}, function (err) {\n' +
-      'self.postMessage({ type: "fatal", message: "kirjastoa ei saatu ladattua: " + (err && err.message || err) });\n});';
+      'self.postMessage({ type: "fatal", message: ' + JSON.stringify(LineoI18n.t('sam.libFail')) + ' + (err && err.message || err) });\n});';
     var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
     worker = new Worker(url, { type: 'module' });
     worker.onmessage = function (e) {
@@ -109,7 +109,7 @@ var LineoSam = (function () {
     };
     worker.onerror = function (e) {
       // Moduulin lataus epäonnistui (esim. ei verkkoa ensimmäisellä kerralla).
-      var err = new Error(e && e.message ? e.message : 'Tekoälykirjaston lataus epäonnistui');
+      var err = new Error(e && e.message ? e.message : LineoI18n.t('sam.loadFail'));
       waiting.forEach(function (w) { w.reject(err); });
       waiting.clear();
       worker.terminate();
@@ -132,10 +132,10 @@ var LineoSam = (function () {
         stop();
         timer = setTimeout(function () {
           waiting.delete(id);
-          reject(new Error((msg.type === 'load' ? 'mallin lataus' : 'kuvan analyysi') + ' ei etene ' + Math.round(limit / 1000) + ' sekuntiin'));
+          reject(new Error(LineoI18n.t(msg.type === 'load' ? 'sam.stuckLoad' : 'sam.stuckEncode', { s: Math.round(limit / 1000) })));
           if (worker) { worker.terminate(); worker = null; }
           state.loaded = false; state.loading = null; state.encodedKey = null; state.encoding = null;
-          waiting.forEach(function (w) { w.reject(new Error('tekoälyn käsittely keskeytyi')); });
+          waiting.forEach(function (w) { w.reject(new Error(LineoI18n.t('sam.aborted'))); });
           waiting.clear();
         }, limit);
       }

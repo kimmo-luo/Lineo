@@ -11,7 +11,7 @@
  */
 'use strict';
 
-var CACHE = 'lineo-v18';
+var CACHE = 'lineo-v19';
 // Tekoälykirjasto (transformers.js + ONNX Runtime) jsDelivristä. Osoitteissa on
 // tarkka versionumero, joten tiedosto ei koskaan muutu: välimuisti ensin.
 // (Mallin painot transformers.js tallentaa itse selaimen välimuistiin.)
@@ -24,6 +24,7 @@ var APP_SHELL = [
   'index.html',
   'manifest.json',
   'css/app.css',
+  'js/i18n.js',
   'js/app.js',
   'js/edge-core.js',
   'js/vector.js',

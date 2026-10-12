@@ -499,3 +499,19 @@ body.lineo-app {
 .lineo-section.is-collapsed .lineo-section-head.is-collapsible::after { transform: rotate(-45deg); }
 .lineo-section.is-collapsed .lineo-section-body { display: none; }
 #contour-start[hidden], #contour-controls[hidden], #contour-remove[hidden] { display: none; }
+
+/* ---------- Kielivalinta (FI / EN) ---------- */
+
+.lang-switch { flex: none; }
+.lang-switch .seg-btn { flex: none; height: 24px; padding: 0 7px; font-size: 12px; }
+@media (pointer: coarse) {
+  .lang-switch .seg-btn { height: 30px; padding: 0 9px; }
+}
+/* Kapealla puhelimella yläpalkkiin ei mahdu sekä nimi että kielivalinta: logo riittää. */
+@media (max-width: 480px) {
+  .lineo-wordmark { display: none; }
+  .lang-switch .seg-btn { padding: 0 6px; }
+}
+@media (max-width: 400px) {
+  .lang-switch .seg-btn { padding: 0 4px; }
+}
