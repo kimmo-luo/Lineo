@@ -1,6 +1,6 @@
 # Lineo – käyttöohje
 
-Selaimessa toimiva kuvankäsittely- ja piirto-ohjelma maalausten ääriviivoja varten.
+Selaimessa toimiva ilmainen kuvankäsittely- ja piirto-ohjelma maalausten ääriviivoja varten (avoin lähdekoodi, MIT-lisenssi).
 
 Kaikki tapahtuu omassa selaimessa: kuvia ei lähetetä minnekään.
 
@@ -43,25 +43,16 @@ se toimii heti ensimmäisestä avauksesta lähtien myös ilman verkkoa.
 - **Säädöt**-painike piilottaa säätöpaneelin, jolloin kuva saa koko ruudun.
 - Tietokoneella rulla tai kosketuslevyn nipistys zoomaa, raahaus liikuttaa, Ctrl+0 sovittaa ja Ctrl+1 näyttää 100 %.
 
-## Vaihe 1 – automaattiset ääriviivat ✅
+## Kuvan avaus ja ääriviivat
 
-- Kuvan avaus raahaamalla, **Avaa kuva** -napista (Ctrl+O) tai liittämällä (Ctrl+V)
-- **Kuva avautuu aluksi sellaisenaan** (ei ääriviivoja, alkuperäinen täydellä näkyvyydellä). **Luo ääriviivat** -nappi (tai minkä tahansa ääriviivasäätimen liikuttaminen) laskee automaattiset ääriviivat, jolloin alkuperäinen himmenee 35 %:iin, jotta viivat erottuvat. Tekoälyrajaus ja piirto toimivat ilman niitä. **Kunnes ääriviivat on luotu, oikealla ei näy ääriviivasäätimiä (tarkkuus, paksuus, kohinan poisto) eikä alkuperäisen läpinäkyvyyttä**, joten kuva on puhdas. Automaattisten ääriviivojen osio (ja Luo ääriviivat -nappi) tulee näkyviin vasta, kun valitset kynän (P) tai tekoälyn (W); käsityökalulla paneelissa on vain lyhyt ohje. Luonnin jälkeen ne tulevat näkyviin, ja osiot voi piilottaa hetkeksi napauttamalla otsikkoa. **Poista automaattiset ääriviivat** palauttaa alkutilan (kumottavissa).
-- Reunantunnistus tekee ääriviivat omalle tasolleen
-- Liukusäätimet päivittävät tuloksen heti:
-  - **Tarkkuus**: kuinka pieni sävyero lasketaan reunaksi
-  - **Viivan paksuus**: 0,5–24 px, pehmeät reunat
-  - **Kohinan poisto**: sumentaa siveltimenjäljen ja poistaa lyhyet roskaviivat
-  - **Viivan väri**
-- Alkuperäinen kuva näkyy himmeänä alla, ja sen läpinäkyvyys on säädettävissä
-- **Vie** (Ctrl+E): maalaus ja ääriviivat yhtenä kuvana, tai pelkät viivat läpinäkyvällä taustalla (katso Vaihe 6)
+- Kuvan avaus raahaamalla, **Avaa kuva** -napista (Ctrl+O) tai liittämällä (Ctrl+V).
+- Kuva avautuu sellaisenaan omalle *Alkuperäinen*-tasolleen. Ääriviivat tehdään itse **kynällä (P)** tai **tekoälyrajauksella (W)** (katso alla). Käsityökalulla sivupaneelissa näkyy lyhyt Aloita-ohje.
+- Alkuperäisen kuvan läpinäkyvyyden säädät tasopaneelin **Tason läpinäkyvyys** -säätimellä, kun alkuperäinen on valittuna. Himmennetyn kuvan päällä viivat erottuvat paremmin.
+- Yli 4096 px kuvat pienennetään työskentelykokoon. Alkuperäinen koko säilyy ja on valittavissa viennissä.
+- **Vie** (Ctrl+E): maalaus ja ääriviivat yhtenä kuvana, pelkät viivat tai kohteen leikkaus (katso Vaihe 6).
 
-Tekniikka: Canny-tyyppinen reunantunnistus (Gaussin sumennus → Sobel →
-ei-maksimien vaimennus → hystereesi → lyhyiden palojen poisto) ja rajattu
-etäisyysmuunnos viivan paksuutta varten. Laskenta tehdään Web Workerissa.
-Välivaiheet ovat välimuistissa, joten paksuuden ja värin säätö on lähes välitön.
-Isoista kuvista näytetään säädintä raahatessa kevyt esikatselu, ja täysi tarkkuus
-lasketaan, kun säätimen päästää irti. Yli 4096 px kuvat pienennetään työskentelykokoon.
+Ohjelmassa ei ole enää automaattisten ääriviivojen säätimiä (Luo ääriviivat, tarkkuus, paksuus, kohinan poisto).
+Vanhat projektitiedostot, joissa on automaattisia ääriviivoja, aukeavat silti, ja niiden viivat näkyvät *Ääriviivat*-tasolla.
 
 ## Vaihe 2 – tekoälyrajaus klikkaamalla ✅
 
@@ -78,8 +69,10 @@ lasketaan, kun säätimen päästää irti. Yli 4096 px kuvat pienennetään ty�
   - pisteen poisto (Delete tai *Poista piste*)
   - kahvojen raahaus (Alt taittaa kahvan)
   - tuplaklikkaus pisteeseen vaihtaa kulman ja kaaren
-- **Jokainen kohde omalle tasolleen.** Tason voi valita tasolistasta tai klikkaamalla sen viivaa.
-- **Viivan paksuus ja väri** ovat säädettävissä tasokohtaisesti. **Muodon tarkkuus** laskee käyrän
+- **Jokainen kohde omalle tasolleen.** Tason voi valita tasolistasta tai klikkaamalla sen viivaa. Käsityökalulla (H) napautus viivaan tai piirrokseen valitsee sen tason.
+- **Useampi alue kerralla:** tekoälyrajauksessa jokainen lisäklikkaus rajaa oman alueensa. Valmiissa ääriviivassa on ulkoreuna koko rajauksen ympäri ja vierekkäisten alueiden välissä yksi yhteinen rajaviiva.
+- **Viivojen jatkaminen ja yhdistäminen kynällä:** avoimen viivan päätepisteen napautus valitsee viivan, ja seuraava klikkaus tyhjään jatkaa sitä siitä päästä. Kesken piirron toisen avoimen viivan päätepisteen klikkaus yhdistää viivat yhdeksi.
+- **Viivan paksuus ja väri** ovat säädettävissä tasokohtaisesti. **Muodon tarkkuus** (vain tekoälyrajauksilla) laskee käyrän
   uudelleen alkuperäisestä rajauksesta: vähemmän tai enemmän pisteitä.
 - **Kumoa / tee uudelleen** (Ctrl+Z / Ctrl+Shift+Z) myös työkalurivin napeista.
 - **Latauspalkki:** mallin lataus näyttää edistymisen, ja kuvan analyysi odotusanimaation.
@@ -103,15 +96,15 @@ fiksusti kuin tekoäly.
 
 ## Vaihe 3 – tasot ja piirto ✅
 
-**Tasot** (Tasot-osio sivupaneelissa) toimivat yhdessä automaattisten ääriviivojen ja tekoälyrajausten kanssa:
+**Tasot** (Tasot-osio sivupaneelissa) toimivat yhdessä kynällä ja tekoälyllä tehtyjen vektoriviivojen kanssa:
 
 - **+ Uusi taso:** tyhjä rasteritaso aktiivisen tason päälle. Siveltimellä ja tussilla piirretään rasteritasolle. Jos aktiivinen taso on alkuperäinen kuva tai vektorikohde, piirto menee automaattisesti uudelle tasolle päällimmäiseksi.
 - **Ylös / alas:** tason järjestys. Ylinpänä oleva taso näkyy muiden päällä.
 - **Silmä:** piilota / näytä taso. Piilotettu taso ei tule mukaan PNG-vientiin.
 - **Lukitse:** lukittua tasoa ei voi piirtää, muokata (pisteet, viivan tyyli) eikä poistaa. Näkyvyys, järjestys ja läpinäkyvyys toimivat silti.
 - **Poista:** poistaa aktiivisen tason (kumottavissa).
-- **Tason läpinäkyvyys:** liukusäädin toimii kaikille tasoille, myös vektorikohteille. Alkuperäisen kuvan oma säädin pysyy ennallaan ja pysyy synkassa tämän kanssa.
-- **Alkuperäinen** on aina lukittu ja sitä ei voi poistaa, koska reunantunnistus ja tekoäly käyttävät sitä lähteenä. **Ääriviivat**-tasoa ei voi poistaa, mutta sen voi piilottaa.
+- **Tason läpinäkyvyys:** liukusäädin toimii kaikille tasoille, myös alkuperäiselle kuvalle ja vektorikohteille.
+- **Alkuperäinen** on aina lukittu ja sitä ei voi poistaa, koska tekoäly käyttää sitä lähteenä. **Ääriviivat**-tasoa (vanhojen projektien automaattisia ääriviivoja varten) ei voi poistaa, mutta sen voi piilottaa. Jos taso on tyhjä, sille piirtäminen menee automaattisesti uudelle tasolle.
 
 **Piirtotyökalut** (työkalurivi, kullakin työkalulla omat asetukset):
 
@@ -125,14 +118,11 @@ Asetukset: **koko** (1–500 px, logaritminen liukusäädin; `[` ja `]` muuttava
 (tasoittaa vapisevan käden jälkeä: mitä suurempi, sitä pidemmällä "narulla" viiva seuraa osoitinta) ja **väri**.
 Kankaalla näkyy siveltimen kokoinen ympyrä.
 
-- **Ääriviivojen viimeistely:** voit pyyhkiä tai piirtää suoraan **Ääriviivat**-tasolle. Silloin automaattiset
-  säätimet (tarkkuus, paksuus, kohinan poisto) lukitaan, ettei laskenta ylikirjoita muokkauksia. **Laske ääriviivat uudelleen**
-  palauttaa automaattiset viivat (poistaa käsin tehdyt muutokset, kumottavissa). Jos et halua koskea automaattisiin viivoihin, piirrä uudelle tasolle.
 - **Kumoa / tee uudelleen** kattaa kaiken: vedot, tasojen lisäyksen, poiston, järjestyksen ja läpinäkyvyyden.
   Historia on rajattu muistin mukaan (puhelimessa pienempi), joten hyvin vanhat vedot unohtuvat.
 - **Zoomaus ja liikuttelu:** rulla / nipistys zoomaa, välilyönti + raahaus, keskinappi tai Käsi (H) liikuttaa.
   Puhelimessa yksi sormi piirtää ja kaksi sormea zoomaa ja liikuttaa (kesken oleva veto perutaan).
-- **PNG-vienti** sisältää kaikki näkyvät tasot paitsi alkuperäisen kuvan.
+- Viennissä piilotetut tasot jäävät pois (katso Vaihe 6).
 
 ## Vaihe 4 – valinnat ja muokkaus ✅
 
@@ -169,7 +159,7 @@ tämän), reunakahvat venyttävät yhtä suuntaa, pallukka kiertää (Shift = 15
 **Enter / Käytä** hyväksyy, **Esc / Peru** peruu, ja Ctrl+Z kesken muunnoksen peruu sen. Toimii myös vektorikohteille (pisteet ja kahvat muuntuvat).
 
 **Rajaus (C):** vedä kulmia tai reunoja, tai siirrä aluetta sisältä. Mittasuhde valittavissa (vapaa, 1:1, 4:3, 3:2, 16:9 ja pystyt). Rajaus koskee kaikkia
-tasoja, ja ääriviivat lasketaan uudelleen rajatusta kuvasta (jos ääriviivatasoa ei ole muokattu käsin). Rajaus on kumottavissa.
+tasoja, myös vektoriviivoja. Rajaus on kumottavissa.
 
 Siirrossa ja muunnoksessa kankaan ulkopuolelle joutuva osa leikkautuu pois, mutta kumoaminen palauttaa sen.
 
@@ -185,8 +175,7 @@ Siirrossa ja muunnoksessa kankaan ulkopuolelle joutuva osa leikkautuu pois, mutt
 
 **Kankaan koko (Muokkaa → Kankaan koko, Ctrl+Alt+C):** uusi leveys ja korkeus pikseleinä, mittasuhteet halutessasi lukittuna,
 **ankkuri** (3 × 3) kertoo mihin kohtaan vanha kuva jää, ja **tausta** (läpinäkyvä, valkoinen tai musta) täyttää uuden alueen alkuperäisessä kuvassa.
-Muut tasot saavat uuden alueen läpinäkyvänä, ja vektorikohteet siirtyvät mukana. Pienennys rajaa kuvan ankkurin mukaan.
-Ääriviivat lasketaan uudelleen (jos ääriviivatasoa ei ole muokattu käsin; muokattu taso säilyy sellaisenaan). Kumottavissa.
+Muut tasot saavat uuden alueen läpinäkyvänä, ja vektorikohteet siirtyvät mukana. Pienennys rajaa kuvan ankkurin mukaan. Kumottavissa.
 Kankaan koko on rajattu muistin takia (20 megapikseliä, puhelimessa 10).
 
 **Rajaus kuvan ulkopuolelle:** rajaustyökalulla (C) rajauksen voi vetää kuvan ulkopuolelle (työkalu zoomaa näkymän hieman ulos, jotta tilaa on),
@@ -208,23 +197,21 @@ jolloin kangas suurenee ja uusi alue täytetään *Kuvan ulkopuolinen alue* -val
 | Sumennus | säde 0,5–60 px |
 | Terävöinti | määrä, säde ja kynnys (unsharp mask) |
 
-- **Alkuperäistäkin saa säätää.** Silloin ääriviivat lasketaan uudelleen säädetystä kuvasta (esim. lisäkontrasti tai sumennus parantaa automaattisia viivoja)
-  ja tekoälyn analyysi tehdään uudestaan. Kumoaminen palauttaa kuvan ja ääriviivat.
+- **Alkuperäistäkin saa säätää.** Silloin tekoälyn analyysi tehdään uudestaan säädetystä kuvasta. Kumoaminen palauttaa kuvan.
 - Säädöt eivät toimi vektorikohteille. Niiden värin ja paksuuden säädät Vektoriviiva-osiosta.
-- Käsin muokattu ääriviivataso: säätö ei ylikirjoita automaattisia viivoja, ja säätö tasolle lukitsee automaattiset säätimet kuten piirtäminenkin.
 - Selain voi ottaa osan pikanäppäimistä (esim. Ctrl+L, Ctrl+U) omaan käyttöönsä. Valikko toimii aina.
 
-**Ääriviivatyylit** (napit Ääriviivat- ja Vektoriviiva-osioissa):
+**Ääriviivatyylit** (napit Vektoriviiva-osiossa):
 - **Ohut tussi:** ohut, tarkka musta viiva.
-- **Paksu sarjakuva:** paksu, puhdas musta viiva (enemmän kohinan poistoa).
-- **Lyijykynä:** ohut tummanharmaa viiva, jossa on raekuvio. Automaattisissa viivoissa pinta on rakeinen ja läpikuultava, vektoreissa viiva katkeilee kahdella hieman eri kierroksella.
-- Tyylit asettavat viivan paksuuden, värin, tarkkuuden ja kohinan poiston (kuvan koon mukaan), ja niitä voi hienosäätää liukusäätimillä. Saman tyylin painaminen uudelleen poistaa tyylin (automaattisilla viivoilla).
-- Vektorikohteille tyyli menee valitulle kohteelle, tai **Tyyli kaikille kohteille** -napilla kaikille. Kumottavissa.
+- **Paksu sarjakuva:** paksu, puhdas musta viiva.
+- **Lyijykynä:** ohut tummanharmaa viiva, joka katkeilee kahdella hieman eri kierroksella.
+- Tyylit asettavat viivan paksuuden ja värin, ja niitä voi hienosäätää Viivan paksuus- ja Viivan väri -säätimillä.
+- Tyyli menee valitulle kohteelle, tai **Tyyli kaikille kohteille** -napilla kaikille. Kumottavissa.
 
 **Pipetti (I):** napauta tai raahaa kuvassa. Väri tulee siveltimen, täytön ja liukuvärin väriksi. Lähde: alkuperäinen kuva (oletus, oikeat värit maalauksesta),
 aktiivinen taso tai näkyvä kuva; näyte yksi piste, 3 × 3 tai 5 × 5 keskiarvo. **Alt-klikkaus** poimii värin myös siveltimellä, tussilla, täytöllä ja liukuvärillä.
 
-**Oma paletti:** siveltimen, vektoriviivan, ääriviivojen ja pipetin väriosioissa on paletti. Napauta väriä käyttääksesi sitä, **+ Lisää väri** tallentaa nykyisen värin
+**Oma paletti:** siveltimen, vektoriviivan ja pipetin väriosioissa on paletti. Napauta väriä käyttääksesi sitä, **+ Lisää väri** tallentaa nykyisen värin
 ja **Poista väri** -tilassa väri poistuu napauttamalla. Paletti tallentuu selaimeen (samalla koneella ja selaimella se säilyy).
 
 ## Vaihe 6 – vienti ja tallennus ✅
@@ -233,17 +220,15 @@ ja **Poista väri** -tilassa väri poistuu napauttamalla. Paletti tallentuu sela
 
 | Mitä viedään | Kuvaus |
 | --- | --- |
-| **Maalaus ja ääriviivat yhtenä kuvana** (oletus) | Alkuperäinen kuva täydellä näkyvyydellä (ei himmeänä), sen päällä ääriviivat ja kaikki piirtämäsi tasot. Kuva näyttää samalta kuin ennen ääriviivojen tekoa, ääriviivat lisättynä. |
-| **Pelkät ääriviivat** | Ilman alkuperäistä kuvaa. Tausta läpinäkyvä, valkoinen, musta tai oma väri. |
+| **Maalaus ja ääriviivat yhtenä kuvana** (oletus) | Alkuperäinen kuva täydellä näkyvyydellä (vaikka olisit himmentänyt sen), sen päällä vektoriviivat ja kaikki piirtämäsi näkyvät tasot. |
+| **Pelkät ääriviivat** | Kaikki näkyvät tasot ilman alkuperäistä kuvaa. Tausta läpinäkyvä, valkoinen, musta tai oma väri. |
 | **Kohteen leikkaus** | Rajattu kohde (esim. härkä) alkuperäisen kuvan pikseleillä. Kohteeksi käy tekoälyn vektorikohde, kaikki näkyvät kohteet yhdessä tai nykyinen valinta. Voi rajata kohteen reunoihin, lisätä kohteen ääriviivan ja valita taustan. |
 
-- **Koko:** *Alkuperäinen koko* (jos kuva on pienennetty avatessa), työkoko tai puolet. Alkuperäisessä koossa **ääriviivat lasketaan uudelleen täydessä koossa**
-  (vektoriääriviivat skaalautuvat tarkasti, ja alkuperäiseen tehdyt rajaukset ja säädöt toistetaan täysikokoiselle kuvalle). Se voi kestää hetken, ja isoille kuville on muistiraja (puhelimessa pienempi).
-  Käsin muokattu ääriviivataso skaalataan alkuperäiseen kokoon, sitä ei lasketa uudelleen.
-- **Muoto:** PNG, JPG (laatu säädettävissä; läpinäkyvä tausta muuttuu valkoiseksi) tai **SVG** (vain vektoriääriviivat, eli tekoälyrajaukset ja käsin muokatut kohteet, ei automaattisia ääriviivoja).
+- **Koko:** *Alkuperäinen koko* (jos kuva on pienennetty avatessa), työkoko tai puolet. Alkuperäisessä koossa vektoriääriviivat skaalautuvat tarkasti, ja alkuperäiseen tehdyt rajaukset ja säädöt toistetaan täysikokoiselle kuvalle. Se voi kestää hetken, ja isoille kuville on muistiraja (puhelimessa pienempi).
+- **Muoto:** PNG, JPG (laatu säädettävissä; läpinäkyvä tausta muuttuu valkoiseksi) tai **SVG** (vain vektoriääriviivat, eli kynällä ja tekoälyllä tehdyt viivat; ei sivellinjälkiä).
 - **Vektorikohteesta valinta:** Vektoriviiva-osion **Valinta kohteesta** tekee kohteen alueesta valinnan (Shift = lisää). Sen jälkeen Ctrl+J kopioi kohteen **alkuperäisestä kuvasta** uudelle tasolle, jolloin siirto, muunnos ja säädöt toimivat sille.
 
-**Projekti (Tiedosto-valikko):** **Tallenna projekti** (Ctrl+S) ja **Tallenna nimellä** (Ctrl+Shift+S) tallentavat `.lineo`-tiedoston, jossa ovat kaikki tasot (pikselit, vektorit, nimet, näkyvyys, läpinäkyvyys, lukitus), ääriviivojen asetukset ja tyyli, paletti sekä
+**Projekti (Tiedosto-valikko):** **Tallenna projekti** (Ctrl+S) ja **Tallenna nimellä** (Ctrl+Shift+S) tallentavat `.lineo`-tiedoston, jossa ovat kaikki tasot (pikselit, vektorit, nimet, näkyvyys, läpinäkyvyys, lukitus), viivojen tyylit, paletti sekä
 isoilla kuvilla alkuperäinen tiedosto. Avaa se **Avaa kuva tai projekti** -toiminnolla (Ctrl+O), raahaamalla ikkunaan tai asennetussa sovelluksessa tuplaklikkaamalla tiedostoa.
 - Chromessa ja Edgessä tallennus tapahtuu suoraan samaan tiedostoon (ensimmäisellä kerralla kysytään paikka). Muissa selaimissa (Safari, Firefox, iPhone) tiedosto ladataan Lataukset-kansioon aina, kun tallennat.
 - Tiedostonimessä näkyy •, kun tallentamattomia muutoksia on. Sivua ei voi sulkea vahingossa tai toista kuvaa avata ilman varoitusta.
@@ -256,7 +241,7 @@ isoilla kuvilla alkuperäinen tiedosto. Avaa se **Avaa kuva tai projekti** -toim
 
 ## Tulossa
 
-Kaikki suunnitelman vaiheet on tehty. Mahdollisia jatkoja: säätötasot (ei-tuhoavat säädöt), automaattisten ääriviivojen vienti SVG:ksi, historian tallennus projektiin, automaattitallennus.
+Kaikki suunnitelman vaiheet on tehty. Mahdollisia jatkoja: säätötasot (ei-tuhoavat säädöt), historian tallennus projektiin, automaattitallennus.
 
 ## Yhteinen tyyli
 
@@ -285,7 +270,7 @@ js/brush.js         sivellin, tussi ja pyyhekumi (leimaus, stabilointi, pehmeä 
 js/select.js        valintojen laskenta (maskit, yhdistäminen, taikasauvan alue, reuna)
 js/filters.js       säädöt ja suotimet (kirkkaus, levels, käyrät, sumennus, terävöinti, lyijykynän rae)
 js/files.js         projektitiedosto (.lineo) ja SVG-vienti
-js/edge-core.js     reunantunnistus (ajetaan Web Workerissa)
+js/edge-core.js     reunantunnistus vanhojen projektien automaattisille ääriviivoille (Web Worker)
 js/vector.js        maski → vektoriääriviiva, Bézier-polkujen muokkaus, värialueen rajaus
 js/sam.js           tekoälyrajaus (Segment Anything, transformers.js Web Workerissa)
 shared/             yhteinen tyyli ja logo

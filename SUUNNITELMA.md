@@ -1,10 +1,10 @@
 # Lineo – suunnitelma
 
 Lineo on selaimessa toimiva kuvankäsittely- ja piirto-ohjelma. Yhteinen tyyli ja logo ovat kansiossa `shared/`.
-Erikoisuus on ääriviivat maalausten kuvista. Ohjelma on vain omaan käyttöön, kaikki toimii selaimessa
+Erikoisuus on ääriviivat maalausten kuvista. Ohjelma on ilmainen ja avointa lähdekoodia (MIT-lisenssi), kaikki toimii selaimessa
 ja kuvat pysyvät omalla koneella. Ominaisuudet saavat olla samanlaisia kuin Photoshopissa, ulkoasu on tumma ja selkeä.
 
-**Tärkein idea:** ääriviivat syntyvät nopeasti automaattisesti tai tekoälyn avulla, ja niitä voi sen
+**Tärkein idea:** ääriviivat syntyvät nopeasti kynällä tai tekoälyn avulla, ja niitä voi sen
 jälkeen säätää ja viimeistellä itse. Kaikki toimii yhdessä samassa kuvassa tasoina.
 
 ## Tekninen pohja (älä riko)

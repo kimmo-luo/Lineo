@@ -7,7 +7,8 @@ turning photos of paintings into clean outlines, and for editing and drawing on 
 
 ## Features
 
-- **Outlines from photos of paintings** – trace the shapes of a painting as clean vector lines.
+- **Outlines from photos of paintings** – trace the shapes of a painting as clean vector lines,
+  by hand with the pen tool or with AI selection.
 - **Local AI selection** – click an object and the AI (Segment Anything) selects it. The model
   runs in your browser, and the selection becomes an editable vector outline.
 - **Pen tool** – draw and edit vector outlines point by point, with Bézier handles.
@@ -64,7 +65,7 @@ js/brush.js         brush, marker and eraser
 js/select.js        selection math (masks, magic wand, borders)
 js/filters.js       adjustments and filters
 js/files.js         project file format and SVG export
-js/edge-core.js     edge detection (runs in a Web Worker)
+js/edge-core.js     edge detection for automatic outlines in older projects (Web Worker)
 js/vector.js        mask → vector outline, Bézier path editing
 js/sam.js           AI selection (Segment Anything via transformers.js)
 shared/             shared theme and logo
